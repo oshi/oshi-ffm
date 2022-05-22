@@ -1,0 +1,40 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.github.oshi</groupId>
+	<artifactId>oshi-ffm</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<properties>
+		<copyright>2022</copyright>
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+		<maven.min-version>3.3.9</maven.min-version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<!-- Dependency versions -->
+		<slf4j.version>1.7.36</slf4j.version>
+		<junit.version>5.8.2</junit.version>
+		<hamcrest.version>2.2</hamcrest.version>
+		<!-- Compile versions -->
+		<maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+	</properties>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<source>17</source>
+					<target>17</target>
+					<release>17</release>
+					<compilerArgs>
+						<arg>--add-modules</arg>
+						<arg>jdk.incubator.foreign</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
