@@ -20,19 +20,15 @@
 	</properties>
 
 	<build>
-		<sourceDirectory>src</sourceDirectory>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
-					<source>17</source>
-					<target>17</target>
-					<release>17</release>
-					<compilerArgs>
-						<arg>--add-modules</arg>
-						<arg>jdk.incubator.foreign</arg>
-					</compilerArgs>
+					<source>19</source>
+					<target>19</target>
+					<release>19</release>
+					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
 		</plugins>
