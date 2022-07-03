@@ -1,3 +1,3 @@
-module com.github.oshi {
-    requires jdk.incubator.foreign;
+module ooo.oshi {
+
 }
