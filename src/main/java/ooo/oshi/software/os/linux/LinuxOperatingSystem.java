@@ -5,14 +5,28 @@
  */
 package ooo.oshi.software.os.linux;
 
-import ooo.oshi.software.os.OperatingSystem;
+import java.util.List;
 
-public class LinuxOperatingSystem implements OperatingSystem {
+import ooo.oshi.software.os.OSProcess;
+import ooo.oshi.software.os.common.AbstractOperatingSystem;
+
+public class LinuxOperatingSystem extends AbstractOperatingSystem {
+
+    @Override
+    protected List<OSProcess> queryAllProcesses() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public OSProcess getProcess(int pid) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     @Override
     public int getProcessId() {
         // TODO Auto-generated method stub
         return 0;
     }
-
 }
