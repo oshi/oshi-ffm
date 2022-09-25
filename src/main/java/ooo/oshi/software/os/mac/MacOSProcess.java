@@ -5,7 +5,7 @@
  */
 package ooo.oshi.software.os.mac;
 
-import static ooo.oshi.software.os.OSProcess.State.INVALID;
+import static ooo.oshi.foreign.mac.SystemLibrary.errno;
 import static ooo.oshi.util.Memoizer.memoize;
 
 import java.lang.foreign.MemorySegment;
@@ -63,7 +63,7 @@ public class MacOSProcess extends AbstractOSProcess {
     private String userID;
     private String group;
     private String groupID;
-    private State state = INVALID;
+    private State state = State.RUNNING; // change back to INVALID;
     private int parentProcessID;
     private int threadCount;
     private int priority;
@@ -104,7 +104,7 @@ public class MacOSProcess extends AbstractOSProcess {
     }
 
     private String queryCommandLine() {
-        return String.join(" ", getArguments());
+        return String.join(" ", getArguments()).trim();
     }
 
     @Override
@@ -125,13 +125,8 @@ public class MacOSProcess extends AbstractOSProcess {
         // maintain whatever order the OS provided to the end user
         Map<String, String> env = new LinkedHashMap<>();
 
-        // Get command line via sysctl
-        int[] mib = new int[3];
-        mib[0] = 1; // CTL_KERN
-        mib[1] = 49; // KERN_PROCARGS2
-        mib[2] = pid;
-
-        MemorySegment m = SysctlUtil.sysctl(mib, ARGMAX);
+        // Get command line via sysctl CTL_KERN, KERN_PROCARGS2
+        MemorySegment m = SysctlUtil.sysctl(new int[] { 1, 49, pid }, ARGMAX);
         if (m != null) {
             // Procargs contains an int representing total # of args, followed by a
             // null-terminated execpath string and then the arguments, each
@@ -169,7 +164,7 @@ public class MacOSProcess extends AbstractOSProcess {
                 if (pid > 0) {
                     LOG.warn(
                             "Failed sysctl call for process arguments (kern.procargs2), process {} may not exist. Error code: {}",
-                            pid); // , Native.getLastError()
+                            pid, errno());
                 }
             }
         }
