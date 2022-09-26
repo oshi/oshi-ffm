@@ -10,15 +10,16 @@ import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static ooo.oshi.foreign.mac.SystemLibrary.INT_SIZE;
 import static ooo.oshi.foreign.mac.SystemLibrary.PROC_ALL_PIDS;
 import static ooo.oshi.foreign.mac.SystemLibrary.getpid;
+import static ooo.oshi.foreign.mac.SystemLibrary.proc_listpids;
 import static ooo.oshi.software.os.OSProcess.State.INVALID;
 
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import ooo.oshi.foreign.mac.SystemLibrary;
 import ooo.oshi.software.os.OSProcess;
 import ooo.oshi.software.os.common.AbstractOperatingSystem;
 import ooo.oshi.util.ExecutingCommand;
@@ -51,14 +52,14 @@ public class MacOperatingSystem extends AbstractOperatingSystem {
 
     @Override
     protected List<OSProcess> queryAllProcesses() {
-        int numberOfProcesses = SystemLibrary.proc_listpids(PROC_ALL_PIDS, 0, NULL, 0) / INT_SIZE;
+        int numberOfProcesses = proc_listpids(PROC_ALL_PIDS, 0, NULL, 0) / INT_SIZE;
         int[] pids = new int[numberOfProcesses];
         SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
         MemorySegment cPids = allocator.allocateArray(JAVA_INT, pids);
-        numberOfProcesses = SystemLibrary.proc_listpids(PROC_ALL_PIDS, 0, cPids, pids.length * INT_SIZE) / INT_SIZE;
+        numberOfProcesses = proc_listpids(PROC_ALL_PIDS, 0, cPids, pids.length * INT_SIZE) / INT_SIZE;
         pids = cPids.toArray(JAVA_INT);
-        return Arrays.stream(pids).distinct().mapToObj(this::getProcess).filter(p -> p != null)
-                .collect(Collectors.toList());
+        return Arrays.stream(pids).distinct().parallel().mapToObj(this::getProcess).filter(Objects::nonNull)
+                .filter(ProcessFiltering.VALID_PROCESS).collect(Collectors.toList());
     }
 
     @Override

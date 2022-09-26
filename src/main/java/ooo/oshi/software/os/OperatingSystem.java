@@ -142,8 +142,8 @@ public interface OperatingSystem {
      *         specified process ids if it is running
      */
     default List<OSProcess> getProcesses(Collection<Integer> pids) {
-        return pids.stream().map(this::getProcess).filter(Objects::nonNull).filter(ProcessFiltering.VALID_PROCESS)
-                .collect(Collectors.toList());
+        return pids.stream().distinct().parallel().map(this::getProcess).filter(Objects::nonNull)
+                .filter(ProcessFiltering.VALID_PROCESS).collect(Collectors.toList());
     }
 
     /**
