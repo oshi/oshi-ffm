@@ -5,10 +5,12 @@
  */
 package ooo.oshi;
 
+import java.util.List;
+import java.util.Map.Entry;
+
 import ooo.oshi.software.os.OSProcess;
 import ooo.oshi.software.os.OperatingSystem;
-import ooo.oshi.software.os.mac.MacOperatingSystem;
-import ooo.oshi.util.platform.mac.SysctlUtil;
+import ooo.oshi.util.FormatUtil;
 
 public class Test {
 
@@ -18,12 +20,29 @@ public class Test {
         OperatingSystem os = si.getOperatingSystem();
         System.out.println("The current Process ID is: " + os.getProcessId());
 
-        int maxproc = SysctlUtil.sysctl("kern.maxproc", 123);
-        System.out.println("kern.maxproc=" + maxproc);
+        OSProcess myProc = os.getProcess(os.getProcessId());
 
-        MacOperatingSystem mos = new MacOperatingSystem();
-        for (OSProcess p : mos.getProcesses()) {
-            System.out.println(p.getProcessID() + ": " + p.getCommandLine());
+        // current process will never be null. Other code should check for null here
+        System.out.println(
+                "My PID: " + myProc.getProcessID() + " with affinity " + Long.toBinaryString(myProc.getAffinityMask()));
+        List<OSProcess> procs = os.getProcesses(OperatingSystem.ProcessFiltering.ALL_PROCESSES,
+                OperatingSystem.ProcessSorting.CPU_DESC, 5);
+        System.out.println("   PID  %CPU %MEM       VSZ       RSS Name");
+        for (int i = 0; i < procs.size(); i++) {
+            OSProcess p = procs.get(i);
+            System.out.println(String.format(" %5d %5.1f %4.1f %9s %9s %s", p.getProcessID(),
+                    100d * (p.getKernelTime() + p.getUserTime()) / p.getUpTime(),
+                    100d * p.getResidentSetSize() / (32L << 30), FormatUtil.formatBytes(p.getVirtualSize()),
+                    FormatUtil.formatBytes(p.getResidentSetSize()), p.getName()));
+        }
+        OSProcess p = os.getProcess(os.getProcessId());
+        System.out.println("Current process arguments: ");
+        for (String s : p.getArguments()) {
+            System.out.println("  " + s);
+        }
+        System.out.println("Current process environment: ");
+        for (Entry<String, String> e : p.getEnvironmentVariables().entrySet()) {
+            System.out.println("  " + e.getKey() + "=" + e.getValue());
         }
     }
 

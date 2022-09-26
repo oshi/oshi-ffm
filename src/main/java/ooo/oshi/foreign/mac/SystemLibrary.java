@@ -6,33 +6,36 @@
 package ooo.oshi.foreign.mac;
 
 import static java.lang.foreign.ValueLayout.ADDRESS;
+import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
 import java.lang.foreign.Addressable;
 import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.SymbolLookup;
 import java.lang.invoke.MethodHandle;
 
 public class SystemLibrary {
 
     // Data size
+    public static final int BYTE_SIZE = (int) JAVA_BYTE.byteSize();
     public static final int INT_SIZE = (int) JAVA_INT.byteSize();
     public static final int LONG_SIZE = (int) JAVA_LONG.byteSize();
 
+    // params.h
+    public static final int MAXCOMLEN = 16;
+    public static final int MAXPATHLEN = 1024;
+    public static final int PROC_PIDPATHINFO_MAXSIZE = MAXPATHLEN * INT_SIZE;
+
     // proc_info.h
     public static final int PROC_ALL_PIDS = 1;
+    public static final int PROC_PIDTASKALLINFO = 2;
 
-    /*
-     * Library loading
-     */
     private static final SymbolLookup SYSTEM = Linker.nativeLinker().defaultLookup();
-
-    /*
-     * Util
-     */
 
     /**
      * Gets the last error value ({@code errno}).
@@ -48,12 +51,8 @@ public class SystemLibrary {
         }
     }
 
-    private static MethodHandle errno = Linker.nativeLinker().downcallHandle(SYSTEM.lookup("__error").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS));
-
-    /*
-     * Process
-     */
+    private static final MethodHandle errno = Linker.nativeLinker()
+            .downcallHandle(SYSTEM.lookup("__error").orElseThrow(), FunctionDescriptor.of(ADDRESS));
 
     /**
      * Returns the process ID of the calling process. The ID is guaranteed to be
@@ -100,6 +99,35 @@ public class SystemLibrary {
     private static final MethodHandle proc_listpids = Linker.nativeLinker().downcallHandle(
             SYSTEM.lookup("proc_listpids").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
+
+    /**
+     * Return in buffer a proc_*info structure corresponding to the flavor for the
+     * specified process
+     *
+     * @param pid
+     *            the process identifier
+     * @param flavor
+     *            the type of information requested
+     * @param arg
+     *            argument possibly needed for some flavors
+     * @param buffer
+     *            holds results
+     * @param buffersize
+     *            size of results
+     * @return the number of bytes of data returned in the provided buffer; -1 if an
+     *         error was encountered;
+     */
+    public static int proc_pidinfo(int pid, int flavor, long arg, Addressable buffer, int buffersize) {
+        try {
+            return (int) proc_pidinfo.invokeExact(pid, flavor, arg, buffer, buffersize);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle proc_pidinfo = Linker.nativeLinker().downcallHandle(
+            SYSTEM.lookup("proc_pidinfo").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_LONG, ADDRESS, JAVA_INT));
 
     /**
      * The sysctl() function retrieves system information and allows processes with
@@ -191,4 +219,52 @@ public class SystemLibrary {
     private static final MethodHandle sysctlbyname = Linker.nativeLinker().downcallHandle(
             SYSTEM.lookup("sysctlbyname").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG));
+
+    public static final GroupLayout procBsdInfo = MemoryLayout.structLayout( //
+            JAVA_INT.withName("pbi_flags"), //
+            JAVA_INT.withName("pbi_status"), //
+            JAVA_INT.withName("pbi_xstatus"), //
+            JAVA_INT.withName("pbi_pid"), //
+            JAVA_INT.withName("pbi_ppid"), //
+            JAVA_INT.withName("pbi_uid"), //
+            JAVA_INT.withName("pbi_gid"), //
+            JAVA_INT.withName("pbi_ruid"), //
+            JAVA_INT.withName("pbi_rgid"), //
+            JAVA_INT.withName("pbi_svuid"), //
+            JAVA_INT.withName("pbi_svgid"), //
+            JAVA_INT.withName("rfu_1"), //
+            MemoryLayout.sequenceLayout(MAXCOMLEN, JAVA_BYTE).withName("pbi_comm"), //
+            MemoryLayout.sequenceLayout(2 * MAXCOMLEN, JAVA_BYTE).withName("pbi_name"), //
+            JAVA_INT.withName("pbi_nfiles"), //
+            JAVA_INT.withName("pbi_pgid"), //
+            JAVA_INT.withName("pbi_pjobc"), //
+            JAVA_INT.withName("e_tdev"), //
+            JAVA_INT.withName("e_tpgid"), //
+            JAVA_INT.withName("pbi_nice"), //
+            JAVA_LONG.withName("pbi_start_tvsec"), //
+            JAVA_LONG.withName("pbi_start_tvusec"));
+
+    public static final GroupLayout procTaskInfo = MemoryLayout.structLayout( //
+            JAVA_LONG.withName("pti_virtual_size"), // virtual memory size (bytes)
+            JAVA_LONG.withName("pti_resident_size"), // resident memory size (bytes)
+            JAVA_LONG.withName("pti_total_user"), // total time (nanoseconds)
+            JAVA_LONG.withName("pti_total_system"), //
+            JAVA_LONG.withName("pti_threads_user"), // existing threads only
+            JAVA_LONG.withName("pti_threads_system"), //
+            JAVA_INT.withName("pti_policy"), // default policy for new threads
+            JAVA_INT.withName("pti_faults"), // number of page faults
+            JAVA_INT.withName("pti_pageins"), // number of actual pageins
+            JAVA_INT.withName("pti_cow_faults"), // number of copy-on-write faults
+            JAVA_INT.withName("pti_messages_sent"), // number of messages sent
+            JAVA_INT.withName("pti_messages_received"), // number of messages received
+            JAVA_INT.withName("pti_syscalls_mach"), // number of mach system calls
+            JAVA_INT.withName("pti_syscalls_unix"), // number of unix system calls
+            JAVA_INT.withName("pti_csw"), // number of context switches
+            JAVA_INT.withName("pti_threadnum"), // number of threads in the task
+            JAVA_INT.withName("pti_numrunning"), // number of running threads
+            JAVA_INT.withName("pti_priority")); // task priority
+
+    public static final GroupLayout procTaskAllInfo = MemoryLayout.structLayout( //
+            procBsdInfo.withName("pbsd"), //
+            procTaskInfo.withName("ptinfo"));
 }

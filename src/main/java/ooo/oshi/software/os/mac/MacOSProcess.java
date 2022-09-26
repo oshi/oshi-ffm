@@ -5,10 +5,26 @@
  */
 package ooo.oshi.software.os.mac;
 
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.JAVA_INT;
+import static java.lang.foreign.ValueLayout.JAVA_LONG;
+import static ooo.oshi.foreign.mac.SystemLibrary.PROC_PIDTASKALLINFO;
 import static ooo.oshi.foreign.mac.SystemLibrary.errno;
+import static ooo.oshi.foreign.mac.SystemLibrary.procTaskAllInfo;
+import static ooo.oshi.foreign.mac.SystemLibrary.proc_pidinfo;
+import static ooo.oshi.software.os.OSProcess.State.INVALID;
+import static ooo.oshi.software.os.OSProcess.State.NEW;
+import static ooo.oshi.software.os.OSProcess.State.OTHER;
+import static ooo.oshi.software.os.OSProcess.State.RUNNING;
+import static ooo.oshi.software.os.OSProcess.State.SLEEPING;
+import static ooo.oshi.software.os.OSProcess.State.STOPPED;
+import static ooo.oshi.software.os.OSProcess.State.WAITING;
+import static ooo.oshi.software.os.OSProcess.State.ZOMBIE;
 import static ooo.oshi.util.Memoizer.memoize;
 
+import java.lang.foreign.MemoryLayout.PathElement;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentAllocator;
 import java.lang.foreign.ValueLayout;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,6 +66,30 @@ public class MacOSProcess extends AbstractOSProcess {
     private static final int SZOMB = 5; // intermediate state in process termination
     private static final int SSTOP = 6; // process being traced
 
+    /*
+     * For process info structures
+     */
+    private static final PathElement PBSD = groupElement("pbsd");
+    private static final long STATUS_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_status"));
+    private static final long PPID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_ppid"));
+    private static final long UID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_uid"));
+    private static final long GID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_gid"));
+    private static final long START_TVSEC_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_start_tvsec"));
+    private static final long START_TVUSEC_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_start_tvusec"));
+    private static final long NFILES_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_nfiles"));
+    private static final long FLAGS_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_flags"));
+
+    private static final PathElement PTINFO = groupElement("ptinfo");
+    private static final long TNUM_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_threadnum"));
+    private static final long PRI_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_priority"));
+    private static final long VSZ_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_virtual_size"));
+    private static final long RSS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_resident_size"));
+    private static final long SYS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_total_system"));
+    private static final long USR_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_total_user"));
+    private static final long PGIN_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_pageins"));
+    private static final long FAULTS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_faults"));
+    private static final long CSW_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_csw"));
+
     private int majorVersion;
     private int minorVersion;
 
@@ -63,7 +103,7 @@ public class MacOSProcess extends AbstractOSProcess {
     private String userID;
     private String group;
     private String groupID;
-    private State state = State.RUNNING; // change back to INVALID;
+    private State state = INVALID;
     private int parentProcessID;
     private int threadCount;
     private int priority;
@@ -310,13 +350,20 @@ public class MacOSProcess extends AbstractOSProcess {
     @Override
     public boolean updateAttributes() {
         long now = System.currentTimeMillis();
+        SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
+        int size = (int) procTaskAllInfo.byteSize();
+        MemorySegment m = allocator.allocate(size);
+        if (0 > proc_pidinfo(getProcessID(), PROC_PIDTASKALLINFO, 0, m, size)) {
+            this.state = INVALID;
+            return false;
+        }
+        // Check threadcount first: 0 is invalid
+        this.threadCount = m.get(JAVA_INT, TNUM_OFFSET);
+        if (0 == this.threadCount) {
+            this.state = INVALID;
+            return false;
+        }
         /*-
-        try (CloseableProcTaskAllInfo taskAllInfo = new CloseableProcTaskAllInfo()) {
-            if (0 > SystemB.INSTANCE.proc_pidinfo(getProcessID(), SystemB.PROC_PIDTASKALLINFO, 0, taskAllInfo,
-                    taskAllInfo.size()) || taskAllInfo.ptinfo.pti_threadnum < 1) {
-                this.state = INVALID;
-                return false;
-            }
             try (Memory buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE)) {
                 if (0 < SystemB.INSTANCE.proc_pidpath(getProcessID(), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE)) {
                     this.path = buf.getString(0).trim();
@@ -330,57 +377,62 @@ public class MacOSProcess extends AbstractOSProcess {
             if (this.name.isEmpty()) {
                 // pbi_comm contains first 16 characters of name
                 this.name = Native.toString(taskAllInfo.pbsd.pbi_comm, StandardCharsets.UTF_8);
-            }
-        
-            switch (taskAllInfo.pbsd.pbi_status) {
-            case SSLEEP:
-                this.state = SLEEPING;
-                break;
-            case SWAIT:
-                this.state = WAITING;
-                break;
-            case SRUN:
-                this.state = RUNNING;
-                break;
-            case SIDL:
-                this.state = NEW;
-                break;
-            case SZOMB:
-                this.state = ZOMBIE;
-                break;
-            case SSTOP:
-                this.state = STOPPED;
-                break;
-            default:
-                this.state = OTHER;
-                break;
-            }
-            this.parentProcessID = taskAllInfo.pbsd.pbi_ppid;
-            this.userID = Integer.toString(taskAllInfo.pbsd.pbi_uid);
-            Passwd pwuid = SystemB.INSTANCE.getpwuid(taskAllInfo.pbsd.pbi_uid);
-            if (pwuid != null) {
-                this.user = pwuid.pw_name;
-            }
-            this.groupID = Integer.toString(taskAllInfo.pbsd.pbi_gid);
-            Group grgid = SystemB.INSTANCE.getgrgid(taskAllInfo.pbsd.pbi_gid);
-            if (grgid != null) {
-                this.group = grgid.gr_name;
-            }
-            this.threadCount = taskAllInfo.ptinfo.pti_threadnum;
-            this.priority = taskAllInfo.ptinfo.pti_priority;
-            this.virtualSize = taskAllInfo.ptinfo.pti_virtual_size;
-            this.residentSetSize = taskAllInfo.ptinfo.pti_resident_size;
-            this.kernelTime = taskAllInfo.ptinfo.pti_total_system / 1_000_000L;
-            this.userTime = taskAllInfo.ptinfo.pti_total_user / 1_000_000L;
-            this.startTime = taskAllInfo.pbsd.pbi_start_tvsec * 1000L + taskAllInfo.pbsd.pbi_start_tvusec / 1000L;
-            this.upTime = now - this.startTime;
-            this.openFiles = taskAllInfo.pbsd.pbi_nfiles;
-            this.bitness = (taskAllInfo.pbsd.pbi_flags & P_LP64) == 0 ? 32 : 64;
-            this.majorFaults = taskAllInfo.ptinfo.pti_pageins;
-            // testing using getrusage confirms pti_faults includes both major and minor
-            this.minorFaults = taskAllInfo.ptinfo.pti_faults - taskAllInfo.ptinfo.pti_pageins; // NOSONAR squid:S2184
-            this.contextSwitches = taskAllInfo.ptinfo.pti_csw;
+            }             
+         */
+
+        switch (m.get(JAVA_INT, STATUS_OFFSET)) {
+        case SSLEEP:
+            this.state = SLEEPING;
+            break;
+        case SWAIT:
+            this.state = WAITING;
+            break;
+        case SRUN:
+            this.state = RUNNING;
+            break;
+        case SIDL:
+            this.state = NEW;
+            break;
+        case SZOMB:
+            this.state = ZOMBIE;
+            break;
+        case SSTOP:
+            this.state = STOPPED;
+            break;
+        default:
+            this.state = OTHER;
+            break;
         }
+
+        this.parentProcessID = m.get(JAVA_INT, PPID_OFFSET);
+        this.userID = Integer.toString(m.get(JAVA_INT, UID_OFFSET));
+        /*-
+        Passwd pwuid = SystemB.INSTANCE.getpwuid(taskAllInfo.pbsd.pbi_uid);
+        if (pwuid != null) {
+            this.user = pwuid.pw_name;
+        }
+        */
+        this.groupID = Integer.toString(m.get(JAVA_INT, GID_OFFSET));
+        /*-
+        Group grgid = SystemB.INSTANCE.getgrgid(taskAllInfo.pbsd.pbi_gid);
+        if (grgid != null) {
+            this.group = grgid.gr_name;
+        }
+        */
+        this.priority = m.get(JAVA_INT, PRI_OFFSET);
+        this.virtualSize = m.get(JAVA_LONG, VSZ_OFFSET);
+        this.residentSetSize = m.get(JAVA_LONG, RSS_OFFSET);
+        this.kernelTime = m.get(JAVA_LONG, SYS_OFFSET) / 1_000_000L;
+        this.userTime = m.get(JAVA_LONG, USR_OFFSET) / 1_000_000L;
+        this.startTime = m.get(JAVA_LONG, START_TVSEC_OFFSET) * 1000L + m.get(JAVA_LONG, START_TVUSEC_OFFSET) / 1000L;
+        this.upTime = now - this.startTime;
+        this.openFiles = m.get(JAVA_INT, NFILES_OFFSET);
+        this.bitness = (m.get(JAVA_INT, FLAGS_OFFSET) & P_LP64) == 0 ? 32 : 64;
+        this.majorFaults = m.get(JAVA_INT, PGIN_OFFSET);
+        // testing using getrusage confirms pti_faults includes both major and minor
+        this.minorFaults = m.get(JAVA_INT, FAULTS_OFFSET) - this.majorFaults;
+        this.contextSwitches = m.get(JAVA_INT, CSW_OFFSET);
+        /*-
         if (this.majorVersion > 10 || this.minorVersion >= 9) {
             try (CloseableRUsageInfoV2 rUsageInfoV2 = new CloseableRUsageInfoV2()) {
                 if (0 == SystemB.INSTANCE.proc_pid_rusage(getProcessID(), SystemB.RUSAGE_INFO_V2, rUsageInfoV2)) {

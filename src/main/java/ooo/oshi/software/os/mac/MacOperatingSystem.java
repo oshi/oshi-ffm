@@ -27,7 +27,6 @@ import ooo.oshi.util.platform.mac.SysctlUtil;
 
 public class MacOperatingSystem extends AbstractOperatingSystem {
 
-    private int maxProc = 1024;
     private final int major;
     private final int minor;
 
@@ -47,8 +46,7 @@ public class MacOperatingSystem extends AbstractOperatingSystem {
         // this.osXVersion = version;
         this.major = verMajor;
         this.minor = verMinor;
-        // Set max processes
-        this.maxProc = SysctlUtil.sysctl("kern.maxproc", 0x1000);
+        SysctlUtil.sysctl("kern.maxproc", 0x1000);
     }
 
     @Override
