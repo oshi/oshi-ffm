@@ -5,6 +5,8 @@
  */
 package ooo.oshi.foreign.mac;
 
+import static java.lang.foreign.MemoryLayout.paddingLayout;
+import static java.lang.foreign.MemoryLayout.sequenceLayout;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
@@ -34,6 +36,10 @@ public class SystemLibrary {
     // proc_info.h
     public static final int PROC_ALL_PIDS = 1;
     public static final int PROC_PIDTASKALLINFO = 2;
+    public static final int PROC_PIDVNODEPATHINFO = 9;
+
+    // resource.h
+    public static final int RUSAGE_INFO_V2 = 2;
 
     private static final SymbolLookup SYSTEM = Linker.nativeLinker().defaultLookup();
 
@@ -130,6 +136,91 @@ public class SystemLibrary {
             FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_LONG, ADDRESS, JAVA_INT));
 
     /**
+     * Return in buffer the name of the specified process
+     *
+     * @param pid
+     *            the process identifier
+     * @param buffer
+     *            holds results
+     * @param buffersize
+     *            size of results
+     * @return the length of the name returned in buffer if successful; 0 otherwise
+     */
+    public static int proc_pidpath(int pid, Addressable buffer, int buffersize) {
+        try {
+            return (int) proc_pidpath.invokeExact(pid, buffer, buffersize);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle proc_pidpath = Linker.nativeLinker().downcallHandle(
+            SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
+
+    /**
+     * Return resource usage information for the given pid, which can be a live
+     * process or a zombie.
+     *
+     * @param pid
+     *            the process identifier
+     * @param flavor
+     *            the type of information requested
+     * @param buffer
+     *            holds results
+     * @return 0 on success; or -1 on failure, with errno set to indicate the
+     *         specific error.
+     */
+    public static int proc_pid_rusage(int pid, int flavor, Addressable buffer) {
+        try {
+            return (int) proc_pid_rusage.invokeExact(pid, flavor, buffer);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle proc_pid_rusage = Linker.nativeLinker().downcallHandle(
+            SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+
+    /**
+     * This function searches the password database for the given user uid, always
+     * returning the first one encountered.
+     *
+     * @param uid
+     *            The user ID
+     * @return an address to a Passwd structure matching that user
+     */
+    public static MemoryAddress getpwuid(int uid) {
+        try {
+            return (MemoryAddress) getpwuid.invokeExact(uid);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle getpwuid = Linker.nativeLinker()
+            .downcallHandle(SYSTEM.lookup("getpwuid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
+
+    /**
+     * This function searches the group database for the given group name pointed to
+     * by the group id given by gid, returning the first one encountered. Identical
+     * group gids may result in undefined behavior.
+     *
+     * @param gid
+     *            The group ID
+     * @return an address to a Group structure matching that group
+     */
+    public static MemoryAddress getgrgid(int gid) {
+        try {
+            return (MemoryAddress) getgrgid.invokeExact(gid);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle getgrgid = Linker.nativeLinker()
+            .downcallHandle(SYSTEM.lookup("getgrgid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
+
+    /**
      * The sysctl() function retrieves system information and allows processes with
      * appropriate privileges to set system information. The information available
      * from sysctl() consists of integers, strings, and tables.
@@ -220,7 +311,7 @@ public class SystemLibrary {
             SYSTEM.lookup("sysctlbyname").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG));
 
-    public static final GroupLayout procBsdInfo = MemoryLayout.structLayout( //
+    public static final GroupLayout PROC_BSD_INFO = MemoryLayout.structLayout( //
             JAVA_INT.withName("pbi_flags"), //
             JAVA_INT.withName("pbi_status"), //
             JAVA_INT.withName("pbi_xstatus"), //
@@ -233,8 +324,8 @@ public class SystemLibrary {
             JAVA_INT.withName("pbi_svuid"), //
             JAVA_INT.withName("pbi_svgid"), //
             JAVA_INT.withName("rfu_1"), //
-            MemoryLayout.sequenceLayout(MAXCOMLEN, JAVA_BYTE).withName("pbi_comm"), //
-            MemoryLayout.sequenceLayout(2 * MAXCOMLEN, JAVA_BYTE).withName("pbi_name"), //
+            sequenceLayout(MAXCOMLEN, JAVA_BYTE).withName("pbi_comm"), //
+            sequenceLayout(2 * MAXCOMLEN, JAVA_BYTE).withName("pbi_name"), //
             JAVA_INT.withName("pbi_nfiles"), //
             JAVA_INT.withName("pbi_pgid"), //
             JAVA_INT.withName("pbi_pjobc"), //
@@ -244,7 +335,7 @@ public class SystemLibrary {
             JAVA_LONG.withName("pbi_start_tvsec"), //
             JAVA_LONG.withName("pbi_start_tvusec"));
 
-    public static final GroupLayout procTaskInfo = MemoryLayout.structLayout( //
+    public static final GroupLayout PROC_TASK_INFO = MemoryLayout.structLayout( //
             JAVA_LONG.withName("pti_virtual_size"), // virtual memory size (bytes)
             JAVA_LONG.withName("pti_resident_size"), // resident memory size (bytes)
             JAVA_LONG.withName("pti_total_user"), // total time (nanoseconds)
@@ -264,7 +355,55 @@ public class SystemLibrary {
             JAVA_INT.withName("pti_numrunning"), // number of running threads
             JAVA_INT.withName("pti_priority")); // task priority
 
-    public static final GroupLayout procTaskAllInfo = MemoryLayout.structLayout( //
-            procBsdInfo.withName("pbsd"), //
-            procTaskInfo.withName("ptinfo"));
+    public static final GroupLayout PROC_TASK_ALL_INFO = MemoryLayout.structLayout( //
+            PROC_BSD_INFO.withName("pbsd"), //
+            PROC_TASK_INFO.withName("ptinfo"));
+
+    public static final GroupLayout PASSWD = MemoryLayout.structLayout( //
+            ADDRESS.withName("pw_name"), // user name
+            ADDRESS.withName("pw_passwd"), // encrypted password
+            JAVA_INT.withName("pw_uid"), // user uid
+            JAVA_INT.withName("pw_gid"), // user gid
+            JAVA_LONG.withName("pw_change"), // password change time
+            ADDRESS.withName("pw_class"), // user access class
+            ADDRESS.withName("pw_gecos"), // Honeywell login info
+            ADDRESS.withName("pw_dir"), // home directory
+            ADDRESS.withName("pw_shell"), // default shell
+            JAVA_LONG.withName("pw_expire"), // account expiration
+            ADDRESS.withName("pw_fields")); // internal: fields filled in
+
+    public static final GroupLayout GROUP = MemoryLayout.structLayout( //
+            ADDRESS.withName("gr_name"), // group name
+            ADDRESS.withName("gr_passwd"), // group password
+            ADDRESS.withName("gr_gid"), // group id
+            ADDRESS.withName("gr_mem")); // group members
+
+    public static final GroupLayout RUSAGEINFOV2 = MemoryLayout.structLayout( //
+            sequenceLayout(16, JAVA_BYTE).withName("ri_uuid"), //
+            JAVA_LONG.withName("ri_user_time"), //
+            JAVA_LONG.withName("ri_system_time"), //
+            JAVA_LONG.withName("ri_pkg_idle_wkups"), //
+            JAVA_LONG.withName("ri_interrupt_wkups"), //
+            JAVA_LONG.withName("ri_pageins"), //
+            JAVA_LONG.withName("ri_wired_size"), //
+            JAVA_LONG.withName("ri_resident_size"), //
+            JAVA_LONG.withName("ri_phys_footprint"), //
+            JAVA_LONG.withName("ri_proc_start_abstime"), //
+            JAVA_LONG.withName("ri_proc_exit_abstime"), //
+            JAVA_LONG.withName("ri_child_user_time"), //
+            JAVA_LONG.withName("ri_child_system_time"), //
+            JAVA_LONG.withName("ri_child_pkg_idle_wkups"), //
+            JAVA_LONG.withName("ri_child_interrupt_wkups"), //
+            JAVA_LONG.withName("ri_child_pageins"), //
+            JAVA_LONG.withName("ri_child_elapsed_abstime"), //
+            JAVA_LONG.withName("ri_diskio_bytesread"), //
+            JAVA_LONG.withName("ri_diskio_byteswritten"));
+
+    public static final GroupLayout VNODE_INFO_PATH = MemoryLayout.structLayout( //
+            paddingLayout(152 * 8), // vnode_info but we don't need its data
+            sequenceLayout(MAXPATHLEN, JAVA_BYTE).withName("vip_path"));
+
+    public static final GroupLayout VNODE_PATH_INFO = MemoryLayout.structLayout( //
+            VNODE_INFO_PATH.withName("pvi_cdir"), //
+            VNODE_INFO_PATH.withName("pvi_rdir"));
 }

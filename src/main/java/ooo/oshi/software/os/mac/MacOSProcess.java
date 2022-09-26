@@ -5,13 +5,28 @@
  */
 package ooo.oshi.software.os.mac;
 
+import static java.lang.foreign.MemoryAddress.NULL;
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
+import static ooo.oshi.foreign.mac.SystemLibrary.GROUP;
+import static ooo.oshi.foreign.mac.SystemLibrary.MAXCOMLEN;
+import static ooo.oshi.foreign.mac.SystemLibrary.MAXPATHLEN;
+import static ooo.oshi.foreign.mac.SystemLibrary.PASSWD;
+import static ooo.oshi.foreign.mac.SystemLibrary.PROC_PIDPATHINFO_MAXSIZE;
 import static ooo.oshi.foreign.mac.SystemLibrary.PROC_PIDTASKALLINFO;
+import static ooo.oshi.foreign.mac.SystemLibrary.PROC_PIDVNODEPATHINFO;
+import static ooo.oshi.foreign.mac.SystemLibrary.PROC_TASK_ALL_INFO;
+import static ooo.oshi.foreign.mac.SystemLibrary.RUSAGEINFOV2;
+import static ooo.oshi.foreign.mac.SystemLibrary.RUSAGE_INFO_V2;
+import static ooo.oshi.foreign.mac.SystemLibrary.VNODE_PATH_INFO;
 import static ooo.oshi.foreign.mac.SystemLibrary.errno;
-import static ooo.oshi.foreign.mac.SystemLibrary.procTaskAllInfo;
+import static ooo.oshi.foreign.mac.SystemLibrary.getgrgid;
+import static ooo.oshi.foreign.mac.SystemLibrary.getpwuid;
+import static ooo.oshi.foreign.mac.SystemLibrary.proc_pid_rusage;
 import static ooo.oshi.foreign.mac.SystemLibrary.proc_pidinfo;
+import static ooo.oshi.foreign.mac.SystemLibrary.proc_pidpath;
 import static ooo.oshi.software.os.OSProcess.State.INVALID;
 import static ooo.oshi.software.os.OSProcess.State.NEW;
 import static ooo.oshi.software.os.OSProcess.State.OTHER;
@@ -22,6 +37,7 @@ import static ooo.oshi.software.os.OSProcess.State.WAITING;
 import static ooo.oshi.software.os.OSProcess.State.ZOMBIE;
 import static ooo.oshi.util.Memoizer.memoize;
 
+import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout.PathElement;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
@@ -70,25 +86,35 @@ public class MacOSProcess extends AbstractOSProcess {
      * For process info structures
      */
     private static final PathElement PBSD = groupElement("pbsd");
-    private static final long STATUS_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_status"));
-    private static final long PPID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_ppid"));
-    private static final long UID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_uid"));
-    private static final long GID_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_gid"));
-    private static final long START_TVSEC_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_start_tvsec"));
-    private static final long START_TVUSEC_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_start_tvusec"));
-    private static final long NFILES_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_nfiles"));
-    private static final long FLAGS_OFFSET = procTaskAllInfo.byteOffset(PBSD, groupElement("pbi_flags"));
+    private static final long COMM_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_comm"));
+    private static final long STATUS_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_status"));
+    private static final long PPID_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_ppid"));
+    private static final long UID_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_uid"));
+    private static final long GID_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_gid"));
+    private static final long START_SEC_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_start_tvsec"));
+    private static final long START_USEC_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_start_tvusec"));
+    private static final long NFILES_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_nfiles"));
+    private static final long FLAGS_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PBSD, groupElement("pbi_flags"));
 
     private static final PathElement PTINFO = groupElement("ptinfo");
-    private static final long TNUM_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_threadnum"));
-    private static final long PRI_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_priority"));
-    private static final long VSZ_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_virtual_size"));
-    private static final long RSS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_resident_size"));
-    private static final long SYS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_total_system"));
-    private static final long USR_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_total_user"));
-    private static final long PGIN_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_pageins"));
-    private static final long FAULTS_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_faults"));
-    private static final long CSW_OFFSET = procTaskAllInfo.byteOffset(PTINFO, groupElement("pti_csw"));
+    private static final long TNUM_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_threadnum"));
+    private static final long PRI_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_priority"));
+    private static final long VSZ_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_virtual_size"));
+    private static final long RSS_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_resident_size"));
+    private static final long SYS_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_total_system"));
+    private static final long USR_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_total_user"));
+    private static final long PGIN_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_pageins"));
+    private static final long FLTS_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_faults"));
+    private static final long CSW_OFFSET = PROC_TASK_ALL_INFO.byteOffset(PTINFO, groupElement("pti_csw"));
+
+    private static final long PASSWD_NAME_OFFSET = PASSWD.byteOffset(groupElement("pw_name"));
+    private static final long GROUP_NAME_OFFSET = GROUP.byteOffset(groupElement("gr_name"));
+
+    private static final long DISKIO_READ_OFFSET = RUSAGEINFOV2.byteOffset(groupElement("ri_diskio_bytesread"));
+    private static final long DISKIO_WRITTEN_OFFSET = RUSAGEINFOV2.byteOffset(groupElement("ri_diskio_byteswritten"));
+
+    private static final long VIP_PATH_OFFSET = VNODE_PATH_INFO.byteOffset(groupElement("pvi_cdir"),
+            groupElement("vip_path"));
 
     private int majorVersion;
     private int minorVersion;
@@ -351,7 +377,7 @@ public class MacOSProcess extends AbstractOSProcess {
     public boolean updateAttributes() {
         long now = System.currentTimeMillis();
         SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-        int size = (int) procTaskAllInfo.byteSize();
+        int size = (int) PROC_TASK_ALL_INFO.byteSize();
         MemorySegment m = allocator.allocate(size);
         if (0 > proc_pidinfo(getProcessID(), PROC_PIDTASKALLINFO, 0, m, size)) {
             this.state = INVALID;
@@ -363,22 +389,20 @@ public class MacOSProcess extends AbstractOSProcess {
             this.state = INVALID;
             return false;
         }
-        /*-
-            try (Memory buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE)) {
-                if (0 < SystemB.INSTANCE.proc_pidpath(getProcessID(), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE)) {
-                    this.path = buf.getString(0).trim();
-                    // Overwrite name with last part of path
-                    String[] pathSplit = this.path.split("/");
-                    if (pathSplit.length > 0) {
-                        this.name = pathSplit[pathSplit.length - 1];
-                    }
-                }
+
+        MemorySegment buf = allocator.allocate(PROC_PIDPATHINFO_MAXSIZE);
+        if (0 < proc_pidpath(getProcessID(), buf, PROC_PIDPATHINFO_MAXSIZE)) {
+            this.path = buf.getUtf8String(0);
+            // Overwrite name with last part of path
+            String[] pathSplit = this.path.split("/");
+            if (pathSplit.length > 0) {
+                this.name = pathSplit[pathSplit.length - 1];
             }
-            if (this.name.isEmpty()) {
-                // pbi_comm contains first 16 characters of name
-                this.name = Native.toString(taskAllInfo.pbsd.pbi_comm, StandardCharsets.UTF_8);
-            }             
-         */
+        }
+        if (this.name.isEmpty()) {
+            // pbi_comm contains first 16 characters of name
+            this.name = m.asSlice(COMM_OFFSET, MAXCOMLEN).getUtf8String(0);
+        }
 
         switch (m.get(JAVA_INT, STATUS_OFFSET)) {
         case SSLEEP:
@@ -403,50 +427,48 @@ public class MacOSProcess extends AbstractOSProcess {
             this.state = OTHER;
             break;
         }
-
         this.parentProcessID = m.get(JAVA_INT, PPID_OFFSET);
-        this.userID = Integer.toString(m.get(JAVA_INT, UID_OFFSET));
-        /*-
-        Passwd pwuid = SystemB.INSTANCE.getpwuid(taskAllInfo.pbsd.pbi_uid);
-        if (pwuid != null) {
-            this.user = pwuid.pw_name;
+
+        int uid = m.get(JAVA_INT, UID_OFFSET);
+        this.userID = Integer.toString(uid);
+        MemoryAddress pwuid = getpwuid(uid);
+        if (!pwuid.equals(NULL)) {
+            this.user = pwuid.get(ADDRESS, PASSWD_NAME_OFFSET).getUtf8String(0);
         }
-        */
-        this.groupID = Integer.toString(m.get(JAVA_INT, GID_OFFSET));
-        /*-
-        Group grgid = SystemB.INSTANCE.getgrgid(taskAllInfo.pbsd.pbi_gid);
-        if (grgid != null) {
-            this.group = grgid.gr_name;
+        int gid = m.get(JAVA_INT, GID_OFFSET);
+        this.groupID = Integer.toString(gid);
+        MemoryAddress grgid = getgrgid(gid);
+        if (!grgid.equals(NULL)) {
+            this.group = grgid.get(ADDRESS, GROUP_NAME_OFFSET).getUtf8String(0);
         }
-        */
+
         this.priority = m.get(JAVA_INT, PRI_OFFSET);
         this.virtualSize = m.get(JAVA_LONG, VSZ_OFFSET);
         this.residentSetSize = m.get(JAVA_LONG, RSS_OFFSET);
         this.kernelTime = m.get(JAVA_LONG, SYS_OFFSET) / 1_000_000L;
         this.userTime = m.get(JAVA_LONG, USR_OFFSET) / 1_000_000L;
-        this.startTime = m.get(JAVA_LONG, START_TVSEC_OFFSET) * 1000L + m.get(JAVA_LONG, START_TVUSEC_OFFSET) / 1000L;
+        this.startTime = m.get(JAVA_LONG, START_SEC_OFFSET) * 1000L + m.get(JAVA_LONG, START_USEC_OFFSET) / 1000L;
         this.upTime = now - this.startTime;
         this.openFiles = m.get(JAVA_INT, NFILES_OFFSET);
         this.bitness = (m.get(JAVA_INT, FLAGS_OFFSET) & P_LP64) == 0 ? 32 : 64;
         this.majorFaults = m.get(JAVA_INT, PGIN_OFFSET);
         // testing using getrusage confirms pti_faults includes both major and minor
-        this.minorFaults = m.get(JAVA_INT, FAULTS_OFFSET) - this.majorFaults;
+        this.minorFaults = m.get(JAVA_INT, FLTS_OFFSET) - this.majorFaults;
         this.contextSwitches = m.get(JAVA_INT, CSW_OFFSET);
-        /*-
+
         if (this.majorVersion > 10 || this.minorVersion >= 9) {
-            try (CloseableRUsageInfoV2 rUsageInfoV2 = new CloseableRUsageInfoV2()) {
-                if (0 == SystemB.INSTANCE.proc_pid_rusage(getProcessID(), SystemB.RUSAGE_INFO_V2, rUsageInfoV2)) {
-                    this.bytesRead = rUsageInfoV2.ri_diskio_bytesread;
-                    this.bytesWritten = rUsageInfoV2.ri_diskio_byteswritten;
-                }
+            MemorySegment rUsageInfoV2 = allocator.allocate(RUSAGEINFOV2.byteSize());
+            if (0 == proc_pid_rusage(getProcessID(), RUSAGE_INFO_V2, rUsageInfoV2)) {
+                this.bytesRead = rUsageInfoV2.get(JAVA_LONG, DISKIO_READ_OFFSET);
+                this.bytesWritten = rUsageInfoV2.get(JAVA_LONG, DISKIO_WRITTEN_OFFSET);
             }
         }
-        try (CloseableVnodePathInfo vpi = new CloseableVnodePathInfo()) {
-            if (0 < SystemB.INSTANCE.proc_pidinfo(getProcessID(), SystemB.PROC_PIDVNODEPATHINFO, 0, vpi, vpi.size())) {
-                this.currentWorkingDirectory = Native.toString(vpi.pvi_cdir.vip_path, StandardCharsets.US_ASCII);
-            }
+
+        size = (int) VNODE_PATH_INFO.byteSize();
+        MemorySegment vpi = allocator.allocate(size);
+        if (0 < proc_pidinfo(getProcessID(), PROC_PIDVNODEPATHINFO, 0, vpi, size)) {
+            this.currentWorkingDirectory = vpi.asSlice(VIP_PATH_OFFSET, MAXPATHLEN).getUtf8String(0);
         }
-        */
         return true;
     }
 }

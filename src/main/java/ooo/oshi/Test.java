@@ -25,6 +25,9 @@ public class Test {
         // current process will never be null. Other code should check for null here
         System.out.println(
                 "My PID: " + myProc.getProcessID() + " with affinity " + Long.toBinaryString(myProc.getAffinityMask()));
+        System.out.println("Name: " + myProc.getUser() + ", Group: " + myProc.getGroup());
+        System.out.println("Read: " + myProc.getBytesRead() + ", Written: " + myProc.getBytesWritten());
+        System.out.println("CWD: " + myProc.getCurrentWorkingDirectory());
         List<OSProcess> procs = os.getProcesses(OperatingSystem.ProcessFiltering.ALL_PROCESSES,
                 OperatingSystem.ProcessSorting.CPU_DESC, 5);
         System.out.println("   PID  %CPU %MEM       VSZ       RSS Name");
