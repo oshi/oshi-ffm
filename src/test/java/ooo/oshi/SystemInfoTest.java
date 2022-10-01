@@ -12,7 +12,7 @@ import ooo.oshi.software.os.OSProcess;
 import ooo.oshi.software.os.OperatingSystem;
 import ooo.oshi.util.FormatUtil;
 
-public class Test {
+public class SystemInfoTest {
 
     public static void main(String[] args) {
         System.out.println("The operating system is: " + SystemInfo.getCurrentPlatform().getName());
