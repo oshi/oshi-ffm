@@ -32,17 +32,14 @@ import ooo.oshi.software.os.windows.WindowsOperatingSystem;
 public class SystemInfo {
 
     private static final PlatformEnum CURRENT_PLATFORM;
+
     static {
-        String osName = System.getProperty("os.name");
-        if (osName.startsWith("Linux")) {
-            CURRENT_PLATFORM = LINUX;
-        } else if (osName.startsWith("Mac") || osName.startsWith("Darwin")) {
-            CURRENT_PLATFORM = MACOS;
-        } else if (osName.startsWith("Windows")) {
-            CURRENT_PLATFORM = WINDOWS;
-        } else {
-            CURRENT_PLATFORM = UNSUPPORTED;
-        }
+        CURRENT_PLATFORM = switch (System.getProperty("os.name")) {
+            case String name when name.startsWith("Linux") -> LINUX;
+            case String name when name.startsWith("Mac") || name.startsWith("Darwin") -> MACOS;
+            case String name when name.startsWith("Windows") -> WINDOWS;
+            default -> UNSUPPORTED;
+        };
     }
 
     private static final String NOT_SUPPORTED = "Operating system not supported: ";
@@ -79,23 +76,19 @@ public class SystemInfo {
      * {@link OperatingSystem}.
      *
      * @return A new platform-specific instance implementing
-     *         {@link OperatingSystem}.
+     * {@link OperatingSystem}.
      */
     public OperatingSystem getOperatingSystem() {
         return os.get();
     }
 
     private static OperatingSystem createOperatingSystem() {
-        switch (CURRENT_PLATFORM) {
-        case WINDOWS:
-            return new WindowsOperatingSystem();
-        case LINUX:
-            return new LinuxOperatingSystem();
-        case MACOS:
-            return new MacOperatingSystem();
-        default:
-            throw new UnsupportedOperationException(NOT_SUPPORTED);
-        }
+        return switch (CURRENT_PLATFORM) {
+            case WINDOWS -> new WindowsOperatingSystem();
+            case LINUX -> new LinuxOperatingSystem();
+            case MACOS -> new MacOperatingSystem();
+            default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
+        };
     }
 
     /**
@@ -103,22 +96,18 @@ public class SystemInfo {
      * {@link HardwareAbstractionLayer}.
      *
      * @return A new platform-specific instance implementing
-     *         {@link HardwareAbstractionLayer}.
+     * {@link HardwareAbstractionLayer}.
      */
     public HardwareAbstractionLayer getHardware() {
         return hardware.get();
     }
 
     private static HardwareAbstractionLayer createHardware() {
-        switch (CURRENT_PLATFORM) {
-        case WINDOWS:
-            return new WindowsHardwareAbstractionLayer();
-        case LINUX:
-            return new LinuxHardwareAbstractionLayer();
-        case MACOS:
-            return new MacHardwareAbstractionLayer();
-        default:
-            throw new UnsupportedOperationException(NOT_SUPPORTED);
-        }
+        return switch (CURRENT_PLATFORM) {
+            case WINDOWS -> new WindowsHardwareAbstractionLayer();
+            case LINUX -> new LinuxHardwareAbstractionLayer();
+            case MACOS -> new MacHardwareAbstractionLayer();
+            default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
+        };
     }
 }

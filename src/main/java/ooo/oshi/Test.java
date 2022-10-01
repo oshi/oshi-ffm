@@ -31,12 +31,11 @@ public class Test {
         List<OSProcess> procs = os.getProcesses(OperatingSystem.ProcessFiltering.ALL_PROCESSES,
                 OperatingSystem.ProcessSorting.CPU_DESC, 5);
         System.out.println("   PID  %CPU %MEM       VSZ       RSS Name");
-        for (int i = 0; i < procs.size(); i++) {
-            OSProcess p = procs.get(i);
-            System.out.println(String.format(" %5d %5.1f %4.1f %9s %9s %s", p.getProcessID(),
-                    100d * (p.getKernelTime() + p.getUserTime()) / p.getUpTime(),
-                    100d * p.getResidentSetSize() / (32L << 30), FormatUtil.formatBytes(p.getVirtualSize()),
-                    FormatUtil.formatBytes(p.getResidentSetSize()), p.getName()));
+        for (OSProcess p : procs) {
+            System.out.printf(" %5d %5.1f %4.1f %9s %9s %s%n", p.getProcessID(),
+                100d * (p.getKernelTime() + p.getUserTime()) / p.getUpTime(),
+                100d * p.getResidentSetSize() / (32L << 30), FormatUtil.formatBytes(p.getVirtualSize()),
+                FormatUtil.formatBytes(p.getResidentSetSize()), p.getName());
         }
         OSProcess p = os.getProcess(os.getProcessId());
         System.out.println("Current process arguments: ");
