@@ -14,7 +14,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- Dependency versions -->
         <slf4j.version>2.0.2</slf4j.version>
-        <junit.version>5.8.2</junit.version>
+        <junit.version>5.9.1</junit.version>
         <hamcrest.version>2.2</hamcrest.version>
         <!-- Compile versions -->
         <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
