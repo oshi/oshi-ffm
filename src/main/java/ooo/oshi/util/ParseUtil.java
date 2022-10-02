@@ -32,8 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ooo.oshi.annotation.concurrent.ThreadSafe;
-import ooo.oshi.util.tuples.Pair;
-import ooo.oshi.util.tuples.Triplet;
+import static ooo.oshi.util.Tuples.Pair;
+import static ooo.oshi.util.Tuples.Triplet;
 
 /**
  * String parsing utility.
