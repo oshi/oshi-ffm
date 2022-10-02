@@ -5,7 +5,10 @@
  */
 package ooo.oshi.foreign.windows;
 
-import java.lang.foreign.*;
+import java.lang.foreign.Linker;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 import static java.lang.foreign.ValueLayout.JAVA_INT;
@@ -32,7 +35,7 @@ public class Kernel32Library {
         }
     }
 
-    private static final MethodHandle getpid = linker
+    private static final MethodHandle getCurrentProcessId = linker
             .downcallHandle(Kernel32.lookup("GetCurrentProcessId").orElseThrow(), FunctionDescriptor.of(JAVA_INT));
 
     /**
@@ -41,9 +44,9 @@ public class Kernel32Library {
      *
      * @return the process ID of the calling process.
      */
-    public static int getpid() {
+    public static int getCurrentProcessId() {
         try {
-            return (int) getpid.invoke();
+            return (int) getCurrentProcessId.invoke();
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
