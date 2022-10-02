@@ -7,7 +7,7 @@ package ooo.oshi.software.os.windows;
 
 import java.util.List;
 
-import ooo.oshi.foreign.windows.WindowsLibrary;
+import ooo.oshi.foreign.windows.Kernel32Library;
 import ooo.oshi.software.os.OSProcess;
 import ooo.oshi.software.os.common.AbstractOperatingSystem;
 
@@ -27,6 +27,6 @@ public class WindowsOperatingSystem extends AbstractOperatingSystem {
 
     @Override
     public int getProcessId() {
-        return WindowsLibrary.getpid();
+        return Kernel32Library.getpid();
     }
 }
