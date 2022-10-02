@@ -33,9 +33,9 @@ public class SystemInfoTest {
         System.out.println("   PID  %CPU %MEM       VSZ       RSS Name");
         for (OSProcess p : procs) {
             System.out.printf(" %5d %5.1f %4.1f %9s %9s %s%n", p.getProcessID(),
-                100d * (p.getKernelTime() + p.getUserTime()) / p.getUpTime(),
-                100d * p.getResidentSetSize() / (32L << 30), FormatUtil.formatBytes(p.getVirtualSize()),
-                FormatUtil.formatBytes(p.getResidentSetSize()), p.getName());
+                    100d * (p.getKernelTime() + p.getUserTime()) / p.getUpTime(),
+                    100d * p.getResidentSetSize() / (32L << 30), FormatUtil.formatBytes(p.getVirtualSize()),
+                    FormatUtil.formatBytes(p.getResidentSetSize()), p.getName());
         }
         OSProcess p = os.getProcess(os.getProcessId());
         System.out.println("Current process arguments: ");

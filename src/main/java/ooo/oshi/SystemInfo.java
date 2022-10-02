@@ -76,7 +76,7 @@ public class SystemInfo {
      * {@link OperatingSystem}.
      *
      * @return A new platform-specific instance implementing
-     * {@link OperatingSystem}.
+     *         {@link OperatingSystem}.
      */
     public OperatingSystem getOperatingSystem() {
         return os.get();
@@ -84,10 +84,10 @@ public class SystemInfo {
 
     private static OperatingSystem createOperatingSystem() {
         return switch (CURRENT_PLATFORM) {
-            case WINDOWS -> new WindowsOperatingSystem();
-            case LINUX -> new LinuxOperatingSystem();
-            case MACOS -> new MacOperatingSystem();
-            default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
+        case WINDOWS -> new WindowsOperatingSystem();
+        case LINUX -> new LinuxOperatingSystem();
+        case MACOS -> new MacOperatingSystem();
+        default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
         };
     }
 
@@ -96,7 +96,7 @@ public class SystemInfo {
      * {@link HardwareAbstractionLayer}.
      *
      * @return A new platform-specific instance implementing
-     * {@link HardwareAbstractionLayer}.
+     *         {@link HardwareAbstractionLayer}.
      */
     public HardwareAbstractionLayer getHardware() {
         return hardware.get();
@@ -104,10 +104,10 @@ public class SystemInfo {
 
     private static HardwareAbstractionLayer createHardware() {
         return switch (CURRENT_PLATFORM) {
-            case WINDOWS -> new WindowsHardwareAbstractionLayer();
-            case LINUX -> new LinuxHardwareAbstractionLayer();
-            case MACOS -> new MacHardwareAbstractionLayer();
-            default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
+        case WINDOWS -> new WindowsHardwareAbstractionLayer();
+        case LINUX -> new LinuxHardwareAbstractionLayer();
+        case MACOS -> new MacHardwareAbstractionLayer();
+        default -> throw new UnsupportedOperationException(NOT_SUPPORTED);
         };
     }
 }
