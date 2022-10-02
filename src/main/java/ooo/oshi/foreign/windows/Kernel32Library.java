@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
+ */
 package ooo.oshi.foreign.windows;
 
 import java.lang.foreign.*;
@@ -16,10 +21,8 @@ public class Kernel32Library {
         Kernel32 = SymbolLookup.loaderLookup();
     }
 
-    private static final MethodHandle getLastError = linker.downcallHandle(
-        Kernel32.lookup("GetLastError").orElseThrow(),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT));
-
+    private static final MethodHandle getLastError = linker
+            .downcallHandle(Kernel32.lookup("GetLastError").orElseThrow(), FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     public static int getLastError() {
         try {
@@ -29,9 +32,8 @@ public class Kernel32Library {
         }
     }
 
-    private static final MethodHandle getpid = linker.downcallHandle(
-        Kernel32.lookup("GetCurrentProcessId").orElseThrow(),
-        FunctionDescriptor.of(JAVA_INT));
+    private static final MethodHandle getpid = linker
+            .downcallHandle(Kernel32.lookup("GetCurrentProcessId").orElseThrow(), FunctionDescriptor.of(JAVA_INT));
 
     /**
      * Returns the process ID of the calling process. The ID is guaranteed to be
