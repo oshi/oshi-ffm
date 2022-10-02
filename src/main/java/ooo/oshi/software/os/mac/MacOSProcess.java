@@ -175,12 +175,12 @@ public class MacOSProcess extends AbstractOSProcess {
 
     @Override
     public List<String> getArguments() {
-        return argsEnviron.get().getA();
+        return argsEnviron.get().a();
     }
 
     @Override
     public Map<String, String> getEnvironmentVariables() {
-        return argsEnviron.get().getB();
+        return argsEnviron.get().b();
     }
 
     private Pair<List<String>, Map<String, String>> queryArgsAndEnvironment() {
