@@ -108,6 +108,7 @@
                             </format>
                         </formats>
                         <java>
+                            <removeUnusedImports/>
                             <licenseHeader>
                                 <file>${project.basedir}/config/license-header.txt</file>
                             </licenseHeader>
