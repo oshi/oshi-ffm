@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import ooo.oshi.util.Tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,6 @@ import ooo.oshi.foreign.mac.SystemLibrary;
 import ooo.oshi.software.os.OSThread;
 import ooo.oshi.software.os.common.AbstractOSProcess;
 import ooo.oshi.util.platform.mac.SysctlUtil;
-import ooo.oshi.util.tuples.Pair;
 
 /**
  * OSProcess implementation
