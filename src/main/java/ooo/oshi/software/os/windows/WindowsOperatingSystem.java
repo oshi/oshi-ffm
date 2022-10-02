@@ -10,6 +10,8 @@ import java.util.List;
 import ooo.oshi.software.os.OSProcess;
 import ooo.oshi.software.os.common.AbstractOperatingSystem;
 
+import static ooo.oshi.foreign.windows.Kernel32Library.getCurrentProcessId;
+
 public class WindowsOperatingSystem extends AbstractOperatingSystem {
 
     @Override
@@ -26,7 +28,6 @@ public class WindowsOperatingSystem extends AbstractOperatingSystem {
 
     @Override
     public int getProcessId() {
-        // TODO Auto-generated method stub
-        return 0;
+        return getCurrentProcessId();
     }
 }

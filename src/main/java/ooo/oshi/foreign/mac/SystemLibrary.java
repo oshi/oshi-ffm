@@ -45,7 +45,7 @@ public class SystemLibrary {
 
     /**
      * Gets the last error value ({@code errno}).
-     * 
+     *
      * @return the value of the native errno variable.
      */
     public static int errno() {
