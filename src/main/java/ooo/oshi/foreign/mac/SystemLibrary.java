@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.foreign.mac;
 
@@ -61,8 +60,8 @@ public class SystemLibrary {
             .downcallHandle(SYSTEM.lookup("__error").orElseThrow(), FunctionDescriptor.of(ADDRESS));
 
     /**
-     * Returns the process ID of the calling process. The ID is guaranteed to be
-     * unique and is useful for constructing temporary file names.
+     * Returns the process ID of the calling process. The ID is guaranteed to be unique and is useful for constructing
+     * temporary file names.
      *
      * @return the process ID of the calling process.
      */
@@ -80,19 +79,13 @@ public class SystemLibrary {
     /**
      * Search through the current processes
      *
-     * @param type
-     *            types of processes to be searched
-     * @param typeinfo
-     *            adjunct information for type
-     * @param pids
-     *            a C array of int-sized values to be filled with process
-     *            identifiers that hold an open file reference matching the
-     *            specified path or volume. Pass NULL to obtain the minimum buffer
-     *            size needed to hold the currently active processes.
-     * @param bufferSize
-     *            the size (in bytes) of the provided buffer.
-     * @return the number of bytes of data returned in the provided buffer; -1 if an
-     *         error was encountered;
+     * @param type       types of processes to be searched
+     * @param typeinfo   adjunct information for type
+     * @param pids       a C array of int-sized values to be filled with process identifiers that hold an open file
+     *                   reference matching the specified path or volume. Pass NULL to obtain the minimum buffer size
+     *                   needed to hold the currently active processes.
+     * @param bufferSize the size (in bytes) of the provided buffer.
+     * @return the number of bytes of data returned in the provided buffer; -1 if an error was encountered;
      */
     public static int proc_listpids(int type, int typeinfo, Addressable pids, int bufferSize) {
         try {
@@ -107,21 +100,14 @@ public class SystemLibrary {
             FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
 
     /**
-     * Return in buffer a proc_*info structure corresponding to the flavor for the
-     * specified process
+     * Return in buffer a proc_*info structure corresponding to the flavor for the specified process
      *
-     * @param pid
-     *            the process identifier
-     * @param flavor
-     *            the type of information requested
-     * @param arg
-     *            argument possibly needed for some flavors
-     * @param buffer
-     *            holds results
-     * @param buffersize
-     *            size of results
-     * @return the number of bytes of data returned in the provided buffer; -1 if an
-     *         error was encountered;
+     * @param pid        the process identifier
+     * @param flavor     the type of information requested
+     * @param arg        argument possibly needed for some flavors
+     * @param buffer     holds results
+     * @param buffersize size of results
+     * @return the number of bytes of data returned in the provided buffer; -1 if an error was encountered;
      */
     public static int proc_pidinfo(int pid, int flavor, long arg, Addressable buffer, int buffersize) {
         try {
@@ -138,12 +124,9 @@ public class SystemLibrary {
     /**
      * Return in buffer the name of the specified process
      *
-     * @param pid
-     *            the process identifier
-     * @param buffer
-     *            holds results
-     * @param buffersize
-     *            size of results
+     * @param pid        the process identifier
+     * @param buffer     holds results
+     * @param buffersize size of results
      * @return the length of the name returned in buffer if successful; 0 otherwise
      */
     public static int proc_pidpath(int pid, Addressable buffer, int buffersize) {
@@ -158,17 +141,12 @@ public class SystemLibrary {
             SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
 
     /**
-     * Return resource usage information for the given pid, which can be a live
-     * process or a zombie.
+     * Return resource usage information for the given pid, which can be a live process or a zombie.
      *
-     * @param pid
-     *            the process identifier
-     * @param flavor
-     *            the type of information requested
-     * @param buffer
-     *            holds results
-     * @return 0 on success; or -1 on failure, with errno set to indicate the
-     *         specific error.
+     * @param pid    the process identifier
+     * @param flavor the type of information requested
+     * @param buffer holds results
+     * @return 0 on success; or -1 on failure, with errno set to indicate the specific error.
      */
     public static int proc_pid_rusage(int pid, int flavor, Addressable buffer) {
         try {
@@ -182,11 +160,9 @@ public class SystemLibrary {
             SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
 
     /**
-     * This function searches the password database for the given user uid, always
-     * returning the first one encountered.
+     * This function searches the password database for the given user uid, always returning the first one encountered.
      *
-     * @param uid
-     *            The user ID
+     * @param uid The user ID
      * @return an address to a Passwd structure matching that user
      */
     public static MemoryAddress getpwuid(int uid) {
@@ -201,12 +177,10 @@ public class SystemLibrary {
             .downcallHandle(SYSTEM.lookup("getpwuid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
 
     /**
-     * This function searches the group database for the given group name pointed to
-     * by the group id given by gid, returning the first one encountered. Identical
-     * group gids may result in undefined behavior.
+     * This function searches the group database for the given group name pointed to by the group id given by gid,
+     * returning the first one encountered. Identical group gids may result in undefined behavior.
      *
-     * @param gid
-     *            The group ID
+     * @param gid The group ID
      * @return an address to a Group structure matching that group
      */
     public static MemoryAddress getgrgid(int gid) {
@@ -221,48 +195,32 @@ public class SystemLibrary {
             .downcallHandle(SYSTEM.lookup("getgrgid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
 
     /**
-     * The sysctl() function retrieves system information and allows processes with
-     * appropriate privileges to set system information. The information available
-     * from sysctl() consists of integers, strings, and tables.
+     * The sysctl() function retrieves system information and allows processes with appropriate privileges to set system
+     * information. The information available from sysctl() consists of integers, strings, and tables.
      * <p>
-     * The state is described using a "Management Information Base" (MIB) style
-     * name, listed in name, which is a namelen length array of integers.
+     * The state is described using a "Management Information Base" (MIB) style name, listed in name, which is a namelen
+     * length array of integers.
      * <p>
-     * The information is copied into the buffer specified by oldp. The size of the
-     * buffer is given by the location specified by oldlenp before the call, and
-     * that location gives the amount of data copied after a successful call and
-     * after a call that returns with the error code ENOMEM. If the amount of data
-     * available is greater than the size of the buffer supplied, the call supplies
-     * as much data as fits in the buffer provided and returns with the error code
-     * ENOMEM. If the old value is not desired, oldp and oldlenp should be set to
-     * NULL.
+     * The information is copied into the buffer specified by oldp. The size of the buffer is given by the location
+     * specified by oldlenp before the call, and that location gives the amount of data copied after a successful call
+     * and after a call that returns with the error code ENOMEM. If the amount of data available is greater than the
+     * size of the buffer supplied, the call supplies as much data as fits in the buffer provided and returns with the
+     * error code ENOMEM. If the old value is not desired, oldp and oldlenp should be set to NULL.
      * <p>
-     * The size of the available data can be determined by calling sysctl() with the
-     * NULL argument for oldp. The size of the available data will be returned in
-     * the location pointed to by oldlenp. For some operations, the amount of space
-     * may change often. For these operations, the system attempts to round up so
-     * that the returned size is large enough for a call to return the data shortly
-     * thereafter.
+     * The size of the available data can be determined by calling sysctl() with the NULL argument for oldp. The size of
+     * the available data will be returned in the location pointed to by oldlenp. For some operations, the amount of
+     * space may change often. For these operations, the system attempts to round up so that the returned size is large
+     * enough for a call to return the data shortly thereafter.
      * <p>
-     * To set a new value, newp is set to point to a buffer of length newlen from
-     * which the requested value is to be taken. If a new value is not to be set,
-     * newp should be set to NULL and newlen set to 0.
+     * To set a new value, newp is set to point to a buffer of length newlen from which the requested value is to be
+     * taken. If a new value is not to be set, newp should be set to NULL and newlen set to 0.
      *
-     * @param name
-     *            a Management Information Base (MIB) array of integers
-     * @param namelen
-     *            the length of the array in {@code name}
-     * @param oldp
-     *            A buffer to hold the information retrieved
-     * @param oldlenp
-     *            Size of the buffer, a pointer to a
-     *            {@link com.sun.jna.platform.unix.LibCAPI.size_t} value
-     * @param newp
-     *            To set a new value, a buffer of information to be written. May be
-     *            null if no value is to be set.
-     * @param newlen
-     *            Size of the information to be written. May be 0 if no value is to
-     *            be set.
+     * @param name    a Management Information Base (MIB) array of integers
+     * @param namelen the length of the array in {@code name}
+     * @param oldp    A buffer to hold the information retrieved
+     * @param oldlenp Size of the buffer, a pointer to a {@link com.sun.jna.platform.unix.LibCAPI.size_t} value
+     * @param newp    To set a new value, a buffer of information to be written. May be null if no value is to be set.
+     * @param newlen  Size of the information to be written. May be 0 if no value is to be set.
      * @return 0 on success; sets errno on failure
      */
     public static int sysctl(Addressable name, int namelen, Addressable oldp, Addressable oldlenp, Addressable newp,
@@ -279,23 +237,14 @@ public class SystemLibrary {
             FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG));
 
     /**
-     * The sysctlbyname() function accepts an ASCII representation of the name and
-     * internally looks up the integer name vector. Apart from that, it behaves the
-     * same as the standard sysctl() function.
+     * The sysctlbyname() function accepts an ASCII representation of the name and internally looks up the integer name
+     * vector. Apart from that, it behaves the same as the standard sysctl() function.
      *
-     * @param name
-     *            ASCII representation of the MIB name
-     * @param oldp
-     *            A buffer to hold the information retrieved
-     * @param oldlenp
-     *            Size of the buffer, a pointer to a
-     *            {@link com.sun.jna.platform.unix.LibCAPI.size_t} value
-     * @param newp
-     *            To set a new value, a buffer of information to be written. May be
-     *            null if no value is to be set.
-     * @param newlen
-     *            Size of the information to be written. May be 0 if no value is to
-     *            be set.
+     * @param name    ASCII representation of the MIB name
+     * @param oldp    A buffer to hold the information retrieved
+     * @param oldlenp Size of the buffer, a pointer to a {@link com.sun.jna.platform.unix.LibCAPI.size_t} value
+     * @param newp    To set a new value, a buffer of information to be written. May be null if no value is to be set.
+     * @param newlen  Size of the information to be written. May be 0 if no value is to be set.
      * @return 0 on success; sets errno on failure
      */
     public static int sysctlbyname(Addressable name, Addressable oldp, Addressable oldlenp, Addressable newp,

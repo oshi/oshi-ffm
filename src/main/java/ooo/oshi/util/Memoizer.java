@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.util;
 
@@ -11,9 +10,8 @@ import java.util.function.Supplier;
 import ooo.oshi.annotation.concurrent.ThreadSafe;
 
 /**
- * A memoized function stores the output corresponding to some set of specific
- * inputs. Subsequent calls with remembered inputs return the remembered result
- * rather than recalculating it.
+ * A memoized function stores the output corresponding to some set of specific inputs. Subsequent calls with remembered
+ * inputs return the remembered result rather than recalculating it.
  */
 @ThreadSafe
 public final class Memoizer {
@@ -29,9 +27,8 @@ public final class Memoizer {
     }
 
     /**
-     * Default exipiration of memoized values in nanoseconds, which will refresh
-     * after this time elapses. Update by setting {@link GlobalConfig} property
-     * <code>oshi.util.memoizer.expiration</code> to a value in milliseconds.
+     * Default exipiration of memoized values in nanoseconds, which will refresh after this time elapses. Update by
+     * setting {@link GlobalConfig} property <code>oshi.util.memoizer.expiration</code> to a value in milliseconds.
      *
      * @return The number of nanoseconds to keep memoized values before refreshing
      */
@@ -40,24 +37,19 @@ public final class Memoizer {
     }
 
     /**
-     * Store a supplier in a delegate function to be computed once, and only again
-     * after time to live (ttl) has expired.
+     * Store a supplier in a delegate function to be computed once, and only again after time to live (ttl) has expired.
      *
-     * @param <T>
-     *            The type of object supplied
-     * @param original
-     *            The {@link java.util.function.Supplier} to memoize
-     * @param ttlNanos
-     *            Time in nanoseconds to retain calculation. If negative, retain
-     *            indefinitely.
+     * @param <T>      The type of object supplied
+     * @param original The {@link java.util.function.Supplier} to memoize
+     * @param ttlNanos Time in nanoseconds to retain calculation. If negative, retain indefinitely.
      * @return A memoized version of the supplier
      */
     public static <T> Supplier<T> memoize(Supplier<T> original, long ttlNanos) {
         // Adapted from Guava's ExpiringMemoizingSupplier
         return new Supplier<T>() {
-            final Supplier<T> delegate = original;
-            volatile T value; // NOSONAR squid:S3077
-            volatile long expirationNanos;
+            private final Supplier<T> delegate = original;
+            private volatile T value; // NOSONAR squid:S3077
+            private volatile long expirationNanos;
 
             @Override
             public T get() {
@@ -82,10 +74,8 @@ public final class Memoizer {
     /**
      * Store a supplier in a delegate function to be computed only once.
      *
-     * @param <T>
-     *            The type of object supplied
-     * @param original
-     *            The {@link java.util.function.Supplier} to memoize
+     * @param <T>      The type of object supplied
+     * @param original The {@link java.util.function.Supplier} to memoize
      * @return A memoized version of the supplier
      */
     public static <T> Supplier<T> memoize(Supplier<T> original) {

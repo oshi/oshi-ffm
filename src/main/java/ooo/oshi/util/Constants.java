@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.util;
 
@@ -24,8 +23,7 @@ public final class Constants {
     public static final String UNKNOWN = "unknown";
 
     /**
-     * The official/approved path for sysfs information. Note: /sys/class/dmi/id
-     * symlinks here
+     * The official/approved path for sysfs information. Note: /sys/class/dmi/id symlinks here
      */
     public static final String SYSFS_SERIAL_PATH = "/sys/devices/virtual/dmi/id/";
 

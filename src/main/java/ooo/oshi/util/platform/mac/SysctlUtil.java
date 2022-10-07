@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.util.platform.mac;
 
@@ -38,10 +37,8 @@ public final class SysctlUtil {
     /**
      * Executes a sysctl call with an int result
      *
-     * @param name
-     *            name of the sysctl
-     * @param def
-     *            default int value
+     * @param name name of the sysctl
+     * @param def  default int value
      * @return The int result of the call if successful; the default otherwise
      */
     public static int sysctl(String name, int def) {
@@ -60,10 +57,8 @@ public final class SysctlUtil {
     /**
      * Executes a sysctl call with a long result
      *
-     * @param name
-     *            name of the sysctl
-     * @param def
-     *            default long value
+     * @param name name of the sysctl
+     * @param def  default long value
      * @return The long result of the call if successful; the default otherwise
      */
     public static long sysctl(String name, long def) {
@@ -82,10 +77,8 @@ public final class SysctlUtil {
     /**
      * Executes a sysctl call with a String result
      *
-     * @param name
-     *            name of the sysctl
-     * @param def
-     *            default String value
+     * @param name name of the sysctl
+     * @param def  default String value
      * @return The String result of the call if successful; the default otherwise
      */
     public static String sysctl(String name, String def) {
@@ -110,10 +103,9 @@ public final class SysctlUtil {
     /**
      * Executes a sysctl call with a Pointer result
      *
-     * @param name
-     *            name of the sysctl
-     * @return An allocated memory buffer containing the result on success, null
-     *         otherwise. Its value on failure is undefined.
+     * @param name name of the sysctl
+     * @return An allocated memory buffer containing the result on success, null otherwise. Its value on failure is
+     *         undefined.
      */
     public static MemorySegment sysctl(String name) {
         SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
@@ -137,12 +129,10 @@ public final class SysctlUtil {
     /**
      * Executes a sysctl call with a Pointer result
      *
-     * @param mib
-     *            a MIB array
-     * @param sizeToAllocate
-     *            the size of the buffer to allocate
-     * @return An allocated memory buffer containing the result on success, null
-     *         otherwise. Its value on failure is undefined.
+     * @param mib            a MIB array
+     * @param sizeToAllocate the size of the buffer to allocate
+     * @return An allocated memory buffer containing the result on success, null otherwise. Its value on failure is
+     *         undefined.
      */
     public static MemorySegment sysctl(int[] mib, long sizeToAllocate) {
         SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
