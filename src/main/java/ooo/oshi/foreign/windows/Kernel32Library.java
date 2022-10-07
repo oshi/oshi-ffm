@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.foreign.windows;
 
@@ -39,8 +38,8 @@ public class Kernel32Library {
             .downcallHandle(Kernel32.lookup("GetCurrentProcessId").orElseThrow(), FunctionDescriptor.of(JAVA_INT));
 
     /**
-     * Returns the process ID of the calling process. The ID is guaranteed to be
-     * unique and is useful for constructing temporary file names.
+     * Returns the process ID of the calling process. The ID is guaranteed to be unique and is useful for constructing
+     * temporary file names.
      *
      * @return the process ID of the calling process.
      */

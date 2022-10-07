@@ -107,7 +107,10 @@
                             </format>
                         </formats>
                         <java>
-                            <removeUnusedImports/>
+                            <ratchetFrom>origin/main</ratchetFrom>
+                            <removeUnusedImports />
+                            <trimTrailingWhitespace />
+                            <endWithNewline />
                             <licenseHeader>
                                 <file>${project.basedir}/config/license-header.txt</file>
                             </licenseHeader>

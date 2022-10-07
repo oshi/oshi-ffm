@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.software.os.common;
 
@@ -14,10 +13,9 @@ import ooo.oshi.annotation.concurrent.ThreadSafe;
 import ooo.oshi.software.os.OSProcess;
 
 /**
- * A process is an instance of a computer program that is being executed. It
- * contains the program code and its current activity. Depending on the
- * operating system (OS), a process may be made up of multiple threads of
- * execution that execute instructions concurrently.
+ * A process is an instance of a computer program that is being executed. It contains the program code and its current
+ * activity. Depending on the operating system (OS), a process may be made up of multiple threads of execution that
+ * execute instructions concurrently.
  */
 @ThreadSafe
 public abstract class AbstractOSProcess implements OSProcess {

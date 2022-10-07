@@ -1,7 +1,6 @@
 /*
+ * Copyright 2022 the OSHI-FFM project contributors.
  * SPDX-License-Identifier: Apache-2.0
- *
- * Contributions to this file must be licensed under the Apache 2.0 license or a compatible open source license.
  */
 package ooo.oshi.software.os;
 
@@ -17,8 +16,7 @@ import ooo.oshi.software.os.OSProcess.State;
 public interface OperatingSystem {
 
     /**
-     * Constants which may be used to filter Process lists in
-     * {@link #getProcesses(Predicate, Comparator, int)},
+     * Constants which may be used to filter Process lists in {@link #getProcesses(Predicate, Comparator, int)},
      * {@link #getChildProcesses(int, Predicate, Comparator, int)}, and
      * {@link #getDescendantProcesses(int, Predicate, Comparator, int)}.
      */
@@ -49,8 +47,7 @@ public interface OperatingSystem {
     }
 
     /**
-     * Constants which may be used to sort Process lists in
-     * {@link #getProcesses(Predicate, Comparator, int)},
+     * Constants which may be used to sort Process lists in {@link #getProcesses(Predicate, Comparator, int)},
      * {@link #getChildProcesses(int, Predicate, Comparator, int)}, and
      * {@link #getDescendantProcesses(int, Predicate, Comparator, int)}.
      */
@@ -99,47 +96,36 @@ public interface OperatingSystem {
     /**
      * Gets currently running processes. No order is guaranteed.
      *
-     * @return A list of {@link oshi.software.os.OSProcess} objects for the
-     *         specified number (or all) of currently running processes, sorted as
-     *         specified. The list may contain null elements or processes with a
-     *         state of {@link OSProcess.State#INVALID} if a process terminates
-     *         during iteration.
+     * @return A list of {@link oshi.software.os.OSProcess} objects for the specified number (or all) of currently
+     *         running processes, sorted as specified. The list may contain null elements or processes with a state of
+     *         {@link OSProcess.State#INVALID} if a process terminates during iteration.
      */
     default List<OSProcess> getProcesses() {
         return getProcesses(null, null, 0);
     }
 
     /**
-     * Gets currently running processes, optionally filtering, sorting, and limited
-     * to the top "N".
+     * Gets currently running processes, optionally filtering, sorting, and limited to the top "N".
      *
-     * @param filter
-     *            An optional {@link Predicate} limiting the results to the
-     *            specified filter. Some common predicates are available in
-     *            {@link ProcessSorting}. May be {@code null} for no filtering.
-     * @param sort
-     *            An optional {@link Comparator} specifying the sorting order. Some
-     *            common comparators are available in {@link ProcessSorting}. May be
-     *            {@code null} for no sorting.
-     * @param limit
-     *            Max number of results to return, or 0 to return all results
-     * @return A list of {@link oshi.software.os.OSProcess} objects, optionally
-     *         filtered, sorted, and limited to the specified number.
+     * @param filter An optional {@link Predicate} limiting the results to the specified filter. Some common predicates
+     *               are available in {@link ProcessSorting}. May be {@code null} for no filtering.
+     * @param sort   An optional {@link Comparator} specifying the sorting order. Some common comparators are available
+     *               in {@link ProcessSorting}. May be {@code null} for no sorting.
+     * @param limit  Max number of results to return, or 0 to return all results
+     * @return A list of {@link oshi.software.os.OSProcess} objects, optionally filtered, sorted, and limited to the
+     *         specified number.
      *         <p>
-     *         The list may contain processes with a state of
-     *         {@link OSProcess.State#INVALID} if a process terminates during
-     *         iteration.
+     *         The list may contain processes with a state of {@link OSProcess.State#INVALID} if a process terminates
+     *         during iteration.
      */
     List<OSProcess> getProcesses(Predicate<OSProcess> filter, Comparator<OSProcess> sort, int limit);
 
     /**
-     * Gets information on a {@link Collection} of currently running processes. This
-     * has potentially improved performance vs. iterating individual processes.
+     * Gets information on a {@link Collection} of currently running processes. This has potentially improved
+     * performance vs. iterating individual processes.
      *
-     * @param pids
-     *            A collection of process IDs
-     * @return A list of {@link oshi.software.os.OSProcess} objects for the
-     *         specified process ids if it is running
+     * @param pids A collection of process IDs
+     * @return A list of {@link oshi.software.os.OSProcess} objects for the specified process ids if it is running
      */
     default List<OSProcess> getProcesses(Collection<Integer> pids) {
         return pids.stream().distinct().parallel().map(this::getProcess).filter(Objects::nonNull)
@@ -149,10 +135,9 @@ public interface OperatingSystem {
     /**
      * Gets information on a currently running process
      *
-     * @param pid
-     *            A process ID
-     * @return An {@link oshi.software.os.OSProcess} object for the specified
-     *         process id if it is running; null otherwise
+     * @param pid A process ID
+     * @return An {@link oshi.software.os.OSProcess} object for the specified process id if it is running; null
+     *         otherwise
      */
     OSProcess getProcess(int pid);
 
