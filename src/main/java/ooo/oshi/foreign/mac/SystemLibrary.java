@@ -22,6 +22,14 @@ import java.lang.invoke.MethodHandle;
 
 public class SystemLibrary {
 
+    private static final SymbolLookup SYS;
+    private static final Linker LINKER;
+
+    static {
+        LINKER = Linker.nativeLinker();
+        SYS = LINKER.defaultLookup();
+    }
+
     // Data size
     public static final int BYTE_SIZE = (int) JAVA_BYTE.byteSize();
     public static final int INT_SIZE = (int) JAVA_INT.byteSize();
@@ -40,7 +48,9 @@ public class SystemLibrary {
     // resource.h
     public static final int RUSAGE_INFO_V2 = 2;
 
-    private static final SymbolLookup SYSTEM = Linker.nativeLinker().defaultLookup();
+    private static final MethodHandle methodHandle(String methodName, FunctionDescriptor fd) {
+        return LINKER.downcallHandle(SYS.lookup(methodName).orElseThrow(), fd);
+    }
 
     /**
      * Gets the last error value ({@code errno}).
@@ -56,8 +66,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle errno = Linker.nativeLinker()
-            .downcallHandle(SYSTEM.lookup("__error").orElseThrow(), FunctionDescriptor.of(ADDRESS));
+    private static final MethodHandle errno = methodHandle("__error", FunctionDescriptor.of(ADDRESS));
 
     /**
      * Returns the process ID of the calling process. The ID is guaranteed to be unique and is useful for constructing
@@ -73,8 +82,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle getpid = Linker.nativeLinker()
-            .downcallHandle(SYSTEM.lookup("getpid").orElseThrow(), FunctionDescriptor.of(JAVA_INT));
+    private static final MethodHandle getpid = methodHandle("getpid", FunctionDescriptor.of(JAVA_INT));
 
     /**
      * Search through the current processes
@@ -95,8 +103,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle proc_listpids = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("proc_listpids").orElseThrow(),
+    private static final MethodHandle proc_listpids = methodHandle("proc_listpids",
             FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
 
     /**
@@ -117,8 +124,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle proc_pidinfo = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("proc_pidinfo").orElseThrow(),
+    private static final MethodHandle proc_pidinfo = methodHandle("proc_pidinfo",
             FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, JAVA_LONG, ADDRESS, JAVA_INT));
 
     /**
@@ -137,8 +143,8 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle proc_pidpath = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
+    private static final MethodHandle proc_pidpath = methodHandle("proc_pidpath",
+            FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT));
 
     /**
      * Return resource usage information for the given pid, which can be a live process or a zombie.
@@ -156,8 +162,8 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle proc_pid_rusage = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("proc_pidpath").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
+    private static final MethodHandle proc_pid_rusage = methodHandle("proc_pidpath",
+            FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS));
 
     /**
      * This function searches the password database for the given user uid, always returning the first one encountered.
@@ -173,8 +179,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle getpwuid = Linker.nativeLinker()
-            .downcallHandle(SYSTEM.lookup("getpwuid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
+    private static final MethodHandle getpwuid = methodHandle("getpwuid", FunctionDescriptor.of(ADDRESS, JAVA_INT));
 
     /**
      * This function searches the group database for the given group name pointed to by the group id given by gid,
@@ -191,8 +196,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle getgrgid = Linker.nativeLinker()
-            .downcallHandle(SYSTEM.lookup("getgrgid").orElseThrow(), FunctionDescriptor.of(ADDRESS, JAVA_INT));
+    private static final MethodHandle getgrgid = methodHandle("getgrgid", FunctionDescriptor.of(ADDRESS, JAVA_INT));
 
     /**
      * The sysctl() function retrieves system information and allows processes with appropriate privileges to set system
@@ -232,8 +236,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle sysctl = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("sysctl").orElseThrow(),
+    private static final MethodHandle sysctl = methodHandle("sysctl",
             FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG));
 
     /**
@@ -256,8 +259,7 @@ public class SystemLibrary {
         }
     }
 
-    private static final MethodHandle sysctlbyname = Linker.nativeLinker().downcallHandle(
-            SYSTEM.lookup("sysctlbyname").orElseThrow(),
+    private static final MethodHandle sysctlbyname = methodHandle("sysctlbyname",
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG));
 
     public static final GroupLayout PROC_BSD_INFO = MemoryLayout.structLayout( //

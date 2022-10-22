@@ -4,28 +4,35 @@
  */
 package ooo.oshi.foreign.windows;
 
+import static java.lang.foreign.ValueLayout.JAVA_INT;
+
+import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-import static java.lang.foreign.ValueLayout.JAVA_INT;
-
 public class Kernel32Library {
 
-    private static final SymbolLookup Kernel32;
-    private static final Linker linker;
+    private static final SymbolLookup K32;
+    private static final Linker LINKER;
 
     static {
-        linker = Linker.nativeLinker();
+        LINKER = Linker.nativeLinker();
         System.loadLibrary("Kernel32");
-        Kernel32 = SymbolLookup.loaderLookup();
+        K32 = SymbolLookup.loaderLookup();
     }
 
-    private static final MethodHandle getLastError = linker
-            .downcallHandle(Kernel32.lookup("GetLastError").orElseThrow(), FunctionDescriptor.of(ValueLayout.JAVA_INT));
+    private static final MethodHandle methodHandle(String methodName, FunctionDescriptor fd) {
+        return LINKER.downcallHandle(K32.lookup(methodName).orElseThrow(), fd);
+    }
 
+    /**
+     * Retrieves the calling thread's last-error code value. The last-error code is maintained on a per-thread basis.
+     * Multiple threads do not overwrite each other's last-error code.
+     * 
+     * @return the calling thread's last-error code.
+     */
     public static int getLastError() {
         try {
             return (int) getLastError.invoke();
@@ -34,8 +41,8 @@ public class Kernel32Library {
         }
     }
 
-    private static final MethodHandle getCurrentProcessId = linker
-            .downcallHandle(Kernel32.lookup("GetCurrentProcessId").orElseThrow(), FunctionDescriptor.of(JAVA_INT));
+    private static final MethodHandle getLastError = methodHandle("GetLastError",
+            FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     /**
      * Returns the process ID of the calling process. The ID is guaranteed to be unique and is useful for constructing
@@ -50,4 +57,8 @@ public class Kernel32Library {
             throw new RuntimeException(e);
         }
     }
+
+    private static final MethodHandle getCurrentProcessId = methodHandle("GetCurrentProcessId",
+            FunctionDescriptor.of(JAVA_INT));
+
 }
