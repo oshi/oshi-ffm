@@ -5,7 +5,6 @@
 package ooo.oshi.foreign.windows;
 
 import static java.lang.foreign.ValueLayout.JAVA_INT;
-import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 
@@ -17,6 +16,8 @@ import java.lang.foreign.SegmentAllocator;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+
+import ooo.oshi.util.ParseUtil;
 
 public class Kernel32Library {
 
@@ -76,18 +77,19 @@ public class Kernel32Library {
     public static String getComputerName() {
     	try {
         	SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-    		Addressable buffer = allocator.allocate(WinNT.MAX_COMPUTERNAME_LENGTH + 1);
-    		Addressable size = allocator.allocate(JAVA_LONG, WinNT.MAX_COMPUTERNAME_LENGTH + 1);
+    		Addressable buffer = allocator.allocate(2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
+    		Addressable size = allocator.allocate(JAVA_INT, 2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
             if(!(boolean) getComputerName.invokeExact(buffer, size))	{
             	throw new RuntimeException("Failed to get Computer Name");
             }
-            return ((MemorySegment)buffer).getUtf8String(0);
+            byte [] bytes = ((MemorySegment)buffer).toArray(ValueLayout.JAVA_BYTE);
+            return ParseUtil.parseByteArrayToUtf16(bytes);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static final MethodHandle getComputerName = methodHandle("GetComputerNameA",
+    private static final MethodHandle getComputerName = methodHandle("GetComputerNameW",
             FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, ADDRESS));
     
 
