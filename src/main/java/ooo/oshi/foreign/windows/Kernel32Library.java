@@ -5,9 +5,15 @@
 package ooo.oshi.foreign.windows;
 
 import static java.lang.foreign.ValueLayout.JAVA_INT;
+import static java.lang.foreign.ValueLayout.JAVA_LONG;
+import static java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
+import static java.lang.foreign.ValueLayout.ADDRESS;
 
+import java.lang.foreign.Addressable;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentAllocator;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
@@ -60,5 +66,29 @@ public class Kernel32Library {
 
     private static final MethodHandle getCurrentProcessId = methodHandle("GetCurrentProcessId",
             FunctionDescriptor.of(JAVA_INT));
+    
+    /**
+     * Retrieves the NetBIOS name of the local computer. This name is established at system startup, when the system
+     * reads it from the registry.
+     *
+     * @return the NetBIOS name of the local computer.
+     */
+    public static String getComputerName() {
+    	try {
+        	SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
+    		Addressable buffer = allocator.allocate(WinNT.MAX_COMPUTERNAME_LENGTH + 1);
+    		Addressable size = allocator.allocate(JAVA_LONG, WinNT.MAX_COMPUTERNAME_LENGTH + 1);
+            if(!(boolean) getComputerName.invokeExact(buffer, size))	{
+            	throw new RuntimeException("Failed to get Computer Name");
+            }
+            return ((MemorySegment)buffer).getUtf8String(0);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle getComputerName = methodHandle("GetComputerNameA",
+            FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, ADDRESS));
+    
 
 }
