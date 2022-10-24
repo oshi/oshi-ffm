@@ -1209,6 +1209,16 @@ public final class ParseUtil {
         } while (end++ < bytes.length);
         return strList;
     }
+    
+    /**
+     * Parse a null-delimited byte array to a UTF-16 string.
+     *
+     * @param bytes A byte array containing a UTF-16 string 
+     * @return the UTF-16 string
+     */
+    public static String parseByteArrayToUtf16(byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_16LE).trim();
+    }
 
     /**
      * Parse a null-delimited byte array to a map of string keys and values.
