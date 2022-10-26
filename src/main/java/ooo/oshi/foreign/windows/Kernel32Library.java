@@ -82,7 +82,7 @@ public class Kernel32Library {
     		Addressable buffer = allocator.allocate(2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
     		Addressable size = allocator.allocate(JAVA_INT, 2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
             if(!(boolean) getComputerName.invokeExact(buffer, size))	{
-            	throw new RuntimeException("Failed to get Computer Name");
+            	throw new Win32Exception(getLastError());
             }
             byte [] bytes = ((MemorySegment)buffer).toArray(ValueLayout.JAVA_BYTE);
             return ParseUtil.parseByteArrayToUtf16(bytes);
