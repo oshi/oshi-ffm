@@ -19,7 +19,6 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 import ooo.oshi.util.ParseUtil;
-import ooo.oshi.util.platform.windows.Win32Exception;
 
 public class Kernel32Library {
 
@@ -82,7 +81,7 @@ public class Kernel32Library {
     		Addressable buffer = allocator.allocate(2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
     		Addressable size = allocator.allocate(JAVA_INT, 2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
             if(!(boolean) getComputerName.invokeExact(buffer, size))	{
-            	throw new Win32Exception(getLastError());
+            	throw new Exception("GetLastError() returned " + getLastError());
             }
             byte [] bytes = ((MemorySegment)buffer).toArray(ValueLayout.JAVA_BYTE);
             return ParseUtil.parseByteArrayToUtf16(bytes);
@@ -106,7 +105,7 @@ public class Kernel32Library {
 			Addressable buffer = allocator.allocate(WinBase.MAX_PATH);
 			int nBufferLength = WinBase.MAX_PATH;
 			if ((int) getTempPath.invoke(nBufferLength, buffer) == 0) {
-				throw new Win32Exception(getLastError());
+				throw new Exception("GetLastError() returned " + getLastError());
 			}
 			byte[] bytes = ((MemorySegment) buffer).toArray(ValueLayout.JAVA_BYTE);
 			return ParseUtil.parseByteArrayToUtf16(bytes);
@@ -130,7 +129,7 @@ public class Kernel32Library {
 
 		try {
 			if (!(boolean) closeHandle.invokeExact(h)) {
-				throw new Win32Exception(getLastError());
+				throw new Exception("GetLastError() returned " + getLastError());
 			}
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
@@ -153,7 +152,7 @@ public class Kernel32Library {
 		try {
 			Addressable hProcess = (MemoryAddress) openProcess.invokeExact(desiredAccess, inheritHandle, processId);
 			if (hProcess == null) {
-				throw new Win32Exception(getLastError());
+				throw new Exception("GetLastError() returned " + getLastError());
 			}
 			return hProcess;
 		} catch (Throwable e) {
@@ -172,7 +171,7 @@ public class Kernel32Library {
 			Addressable lpExeName = allocator.allocate(size);
 			Addressable lpdwSize = allocator.allocate(JAVA_INT, size);
 			if (!(boolean) queryFullProcessImageName.invokeExact(hProcess, dwFlags, lpExeName, lpdwSize)) {
-				throw new Win32Exception(getLastError());
+				throw new Exception("GetLastError() returned " + getLastError());
 			}
 			byte[] bytes = ((MemorySegment) lpExeName).toArray(ValueLayout.JAVA_BYTE);
 			return ParseUtil.parseByteArrayToUtf16(bytes);
@@ -193,30 +192,30 @@ public class Kernel32Library {
 	 */
 	public static final String queryFullProcessImageName(int pid, int dwFlags) {
 		Addressable hProcess = null;
-		Win32Exception we = null;
+		RuntimeException re = null;
 
 		try {
 			hProcess = (Addressable) openProcess(WinBase.PROCESS_QUERY_INFORMATION | WinBase.PROCESS_VM_READ, false,
 					pid);
 			if (hProcess == null) {
-				throw new Win32Exception(getLastError());
+				throw new RuntimeException("GetLastError() returned " + getLastError());
 			}
 			return queryFullProcessImageName(hProcess, dwFlags);
-		} catch (Win32Exception e) {
-			we = e;
-			throw we; // re-throw to invoke finally block
+		} catch (RuntimeException e) {
+			re = e;
+			throw re; // re-throw to invoke finally block
 		} finally {
 			try {
 				closeHandle(hProcess);
-			} catch (Win32Exception e) {
-				if (we == null) {
-					we = e;
+			} catch (RuntimeException e) {
+				if (re == null) {
+					re = e;
 				} else {
-					// Suppress Win32 error for closeHandle
+					// Suppress Runtime Exception for closeHandle
 				}
 			}
-			if (we != null) {
-				throw we;
+			if (re != null) {
+				throw re;
 			}
 		}
 	}
