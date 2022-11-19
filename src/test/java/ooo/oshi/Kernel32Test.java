@@ -23,7 +23,6 @@ public class Kernel32Test {
 		String processName = Kernel32Library.queryFullProcessImageName(currentProcessId, 0);
 		System.out.println("Current Process: " + processName);
 
-        var a = Kernel32Library.createToolHelp32Snapshot();
-        Kernel32Library.debug(a);
+        Kernel32Library.debug();
     }
 }

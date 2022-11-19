@@ -77,11 +77,12 @@ public class Kernel32Library {
     public static final MethodHandle createToolHelp32Snapshot = methodHandle("CreateToolhelp32Snapshot", FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_INT));
 
 
-    public static void debug(Addressable addressable) {
+    public static void debug() {
         try {
+            var snapshot = createToolHelp32Snapshot();
             var first = methodHandle("Process32FirstW", FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
-            var alloc = SegmentAllocator.implicitAllocator();
-
+//            var alloc = SegmentAllocator.implicitAllocator();
+            int MAX_PATH = 260;
             MemoryLayout processEntry32 = MemoryLayout.structLayout(
                 JAVA_INT.withName("dwSize"),
                 JAVA_INT.withName("cntUsage"),
@@ -92,11 +93,12 @@ public class Kernel32Library {
                 JAVA_INT.withName("th32ParentProcessID"),
                 JAVA_INT.withName("pcPriClassBase"),
                 JAVA_INT.withName("dwFlags"),
-                JAVA_CHAR.withName("szExeFile")
+                MemoryLayout.sequenceLayout(MAX_PATH, JAVA_CHAR.withName("szExeFile"))
             );
-
-            var pe32 = alloc.allocate(processEntry32.byteSize());
-            var ret = (int) first.invoke(addressable, pe32);
+            // size is 560
+            var pe32 = MemorySegment.allocateNative(processEntry32, MemorySession.global());
+//            var pe32 = alloc.allocate(556);
+            var ret = (int) first.invoke(snapshot, pe32);
             System.out.println("ret = " + ret);
             if (ret == 0) {
                 throw new Exception("GetLastError() returned " + getLastError());
