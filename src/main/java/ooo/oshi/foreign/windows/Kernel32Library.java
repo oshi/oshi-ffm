@@ -4,19 +4,10 @@
  */
 package ooo.oshi.foreign.windows;
 
-import static java.lang.foreign.ValueLayout.JAVA_INT;
-import static java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
-import static java.lang.foreign.ValueLayout.ADDRESS;
+import static java.lang.foreign.ValueLayout.*;
 import static ooo.oshi.foreign.windows.WinBase.TH32CS_SNAPPROCESS;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SegmentAllocator;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
 import ooo.oshi.util.ParseUtil;
@@ -84,6 +75,36 @@ public class Kernel32Library {
     }
 
     public static final MethodHandle createToolHelp32Snapshot = methodHandle("CreateToolhelp32Snapshot", FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_INT));
+
+
+    public static void debug(Addressable addressable) {
+        try {
+            var first = methodHandle("Process32FirstW", FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+            var alloc = SegmentAllocator.implicitAllocator();
+
+            MemoryLayout processEntry32 = MemoryLayout.structLayout(
+                JAVA_INT.withName("dwSize"),
+                JAVA_INT.withName("cntUsage"),
+                JAVA_INT.withName("th32ProcessID"),
+                ADDRESS.withName("th32DefaultHeapID"),
+                JAVA_INT.withName("th32ModuleID"),
+                JAVA_INT.withName("cntThreads"),
+                JAVA_INT.withName("th32ParentProcessID"),
+                JAVA_INT.withName("pcPriClassBase"),
+                JAVA_INT.withName("dwFlags"),
+                JAVA_CHAR.withName("szExeFile")
+            );
+
+            var pe32 = alloc.allocate(processEntry32.byteSize());
+            var ret = (int) first.invoke(addressable, pe32);
+            System.out.println("ret = " + ret);
+            if (ret == 0) {
+                throw new Exception("GetLastError() returned " + getLastError());
+            }
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Retrieves the NetBIOS name of the local computer. This name is established at system startup, when the system

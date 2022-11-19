@@ -24,6 +24,6 @@ public class Kernel32Test {
 		System.out.println("Current Process: " + processName);
 
         var a = Kernel32Library.createToolHelp32Snapshot();
-	    System.out.println(a);
+        Kernel32Library.debug(a);
     }
 }
