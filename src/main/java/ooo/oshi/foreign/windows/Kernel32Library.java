@@ -7,6 +7,7 @@ package ooo.oshi.foreign.windows;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
 import static java.lang.foreign.ValueLayout.ADDRESS;
+import static ooo.oshi.foreign.windows.WinBase.TH32CS_SNAPPROCESS;
 
 import java.lang.foreign.Addressable;
 import java.lang.foreign.FunctionDescriptor;
@@ -38,7 +39,7 @@ public class Kernel32Library {
     /**
      * Retrieves the calling thread's last-error code value. The last-error code is maintained on a per-thread basis.
      * Multiple threads do not overwrite each other's last-error code.
-     * 
+     *
      * @return the calling thread's last-error code.
      */
     public static int getLastError() {
@@ -68,7 +69,22 @@ public class Kernel32Library {
 
     private static final MethodHandle getCurrentProcessId = methodHandle("GetCurrentProcessId",
             FunctionDescriptor.of(JAVA_INT));
-    
+
+
+    public static Addressable createToolHelp32Snapshot() {
+        try {
+            // Output returns open handle to specified snapshot
+            Addressable openHandle = (MemoryAddress) createToolHelp32Snapshot.invoke(TH32CS_SNAPPROCESS, 0);
+            if (openHandle == null)
+                throw new Exception("GetLastError() returned " + getLastError());
+            return openHandle;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static final MethodHandle createToolHelp32Snapshot = methodHandle("CreateToolhelp32Snapshot", FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_INT));
+
     /**
      * Retrieves the NetBIOS name of the local computer. This name is established at system startup, when the system
      * reads it from the registry.
@@ -92,7 +108,7 @@ public class Kernel32Library {
 
     private static final MethodHandle getComputerName = methodHandle("GetComputerNameW",
             FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, ADDRESS));
-    
+
 	/**
 	 * Retrieves the path of the directory designated for temporary files.
 	 *
