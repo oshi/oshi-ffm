@@ -7,7 +7,16 @@ package ooo.oshi.foreign.windows;
 import static java.lang.foreign.ValueLayout.*;
 import static ooo.oshi.foreign.windows.WinBase.TH32CS_SNAPPROCESS;
 
-import java.lang.foreign.*;
+import java.lang.foreign.Addressable;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 import ooo.oshi.util.ParseUtil;
@@ -97,6 +106,7 @@ public class Kernel32Library {
             );
             // size is 560
             var pe32 = MemorySegment.allocateNative(processEntry32, MemorySession.global());
+            pe32.setAtIndex(JAVA_INT, 0, (int) pe32.byteSize());
 //            var pe32 = alloc.allocate(556);
             var ret = (int) first.invoke(snapshot, pe32);
             System.out.println("ret = " + ret);
