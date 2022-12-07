@@ -84,7 +84,8 @@ public class Kernel32Library {
     }
 
     public static final MethodHandle createToolHelp32Snapshot = methodHandle("CreateToolhelp32Snapshot", FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_INT));
-    public static final MethodHandle ProcessFirst = methodHandle("Process32FirstW", FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+    public static final MethodHandle ProcessFirst = methodHandle("Process32First", FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+    public static final MethodHandle OpenProcess = methodHandle("OpenProcess", FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_BOOLEAN, JAVA_INT));
 
 
     public static void debug() {
@@ -101,22 +102,31 @@ public class Kernel32Library {
                 JAVA_INT.withName("th32ParentProcessID"),
                 JAVA_INT.withName("pcPriClassBase"),
                 JAVA_INT.withName("dwFlags"),
-                MemoryLayout.sequenceLayout(MAX_PATH, JAVA_CHAR.withName("szExeFile"))
+                MemoryLayout.sequenceLayout(MAX_PATH, JAVA_CHAR).withName("szExeFile")
             );
             // size is 560
             try (MemorySession session = MemorySession.openConfined()) {
                 var segment = MemorySegment.allocateNative(process, session);
                 var dwSizeHandle = process.varHandle(PathElement.groupElement("dwSize"));
-                dwSizeHandle.set(segment, 900);
-                var ret = (int) ProcessFirst.invokeExact(snapshot, segment.address());
+                var pidHandle = process.varHandle(PathElement.groupElement("th32ProcessID"));
+                dwSizeHandle.set(segment, (int) process.byteSize());
+                int ret = (int) ProcessFirst.invokeExact(snapshot, (Addressable) segment.address());
                 System.out.println("ret = " + ret);
                 if (ret == 0) {
                     throw new Exception("GetLastError() returned " + getLastError());
                 }
+//                TODO: fetch szExeFile string
+//                var str = segment.getUtf8String(process.byteSize() - MAX_PATH);
+//                System.out.println("str = " + str);
+//                TODO: open process to get priority class
+//                int AllProcess = 0x000F0000 | 0x00100000 | 0xfff;
+//                var openProcess = (MemoryAddress) OpenProcess.invokeExact(AllProcess, false, ((int) pidHandle.get(segment)));
+//                if (openProcess == null) {
+//                    System.out.println("cant open process");
+//                } else {
+//
+//                }
             }
-
-//            pe32.setAtIndex(JAVA_INT, 0, (int) pe32.byteSize());
-//            var pe32 = alloc.allocate(556);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
