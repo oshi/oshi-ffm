@@ -51,7 +51,7 @@ public class Kernel32Library {
     }
 
     private static final MethodHandle getLastError = methodHandle("GetLastError",
-            FunctionDescriptor.of(ValueLayout.JAVA_INT));
+        FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     /**
      * Returns the process ID of the calling process. The ID is guaranteed to be unique and is useful for constructing
@@ -68,7 +68,7 @@ public class Kernel32Library {
     }
 
     private static final MethodHandle getCurrentProcessId = methodHandle("GetCurrentProcessId",
-            FunctionDescriptor.of(JAVA_INT));
+        FunctionDescriptor.of(JAVA_INT));
 
 
     public static Addressable createToolHelp32Snapshot() {
@@ -90,9 +90,8 @@ public class Kernel32Library {
     public static void debug() {
         try {
             var snapshot = createToolHelp32Snapshot();
-//            var alloc = SegmentAllocator.implicitAllocator();
             int MAX_PATH = 260;
-            MemoryLayout processEntry32 = MemoryLayout.structLayout(
+            MemoryLayout process = MemoryLayout.structLayout(
                 JAVA_INT.withName("dwSize"),
                 JAVA_INT.withName("cntUsage"),
                 JAVA_INT.withName("th32ProcessID"),
@@ -105,18 +104,19 @@ public class Kernel32Library {
                 MemoryLayout.sequenceLayout(MAX_PATH, JAVA_CHAR.withName("szExeFile"))
             );
             // size is 560
-            var handle_dwSize = processEntry32.varHandle(PathElement.groupElement("dwSize"));
-            SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-            Addressable pe32 = allocator.allocate(processEntry32);
-            handle_dwSize.set(pe32, 900);
+            try (MemorySession session = MemorySession.openConfined()) {
+                var segment = MemorySegment.allocateNative(process, session);
+                var dwSizeHandle = process.varHandle(PathElement.groupElement("dwSize"));
+                dwSizeHandle.set(segment, 900);
+                var ret = (int) ProcessFirst.invokeExact(snapshot, segment.address());
+                System.out.println("ret = " + ret);
+                if (ret == 0) {
+                    throw new Exception("GetLastError() returned " + getLastError());
+                }
+            }
 
 //            pe32.setAtIndex(JAVA_INT, 0, (int) pe32.byteSize());
 //            var pe32 = alloc.allocate(556);
-            var ret = (int) ProcessFirst.invokeExact(snapshot, pe32);
-            System.out.println("ret = " + ret);
-            if (ret == 0) {
-                throw new Exception("GetLastError() returned " + getLastError());
-            }
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -129,14 +129,14 @@ public class Kernel32Library {
      * @return the NetBIOS name of the local computer.
      */
     public static String getComputerName() {
-    	try {
-        	SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-    		Addressable buffer = allocator.allocate(2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
-    		Addressable size = allocator.allocate(JAVA_INT, 2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
-            if(!(boolean) getComputerName.invokeExact(buffer, size))	{
-            	throw new Exception("GetLastError() returned " + getLastError());
+        try {
+            SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
+            Addressable buffer = allocator.allocate(2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
+            Addressable size = allocator.allocate(JAVA_INT, 2 * (WinBase.MAX_COMPUTERNAME_LENGTH + 1));
+            if (!(boolean) getComputerName.invokeExact(buffer, size)) {
+                throw new Exception("GetLastError() returned " + getLastError());
             }
-            byte [] bytes = ((MemorySegment)buffer).toArray(ValueLayout.JAVA_BYTE);
+            byte[] bytes = ((MemorySegment) buffer).toArray(ValueLayout.JAVA_BYTE);
             return ParseUtil.parseByteArrayToUtf16(bytes);
         } catch (Throwable e) {
             throw new RuntimeException(e);
@@ -144,132 +144,132 @@ public class Kernel32Library {
     }
 
     private static final MethodHandle getComputerName = methodHandle("GetComputerNameW",
-            FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, ADDRESS));
+        FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, ADDRESS));
 
-	/**
-	 * Retrieves the path of the directory designated for temporary files.
-	 *
-	 * @return the temporary file path.
-	 */
-	public static String getTempPath() {
-		try {
-			SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-			// TODO: Handle case if Temp path length exceeds predefined buffer size
-			Addressable buffer = allocator.allocate(WinBase.MAX_PATH);
-			int nBufferLength = WinBase.MAX_PATH;
-			if ((int) getTempPath.invoke(nBufferLength, buffer) == 0) {
-				throw new Exception("GetLastError() returned " + getLastError());
-			}
-			byte[] bytes = ((MemorySegment) buffer).toArray(ValueLayout.JAVA_BYTE);
-			return ParseUtil.parseByteArrayToUtf16(bytes);
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static final MethodHandle getTempPath = methodHandle("GetTempPathW",
-			FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS));
-
-	/**
-	 * Closes an open object handle.
-	 *
-	 * @param h The handle to be closed
-	 */
-	public static void closeHandle(Addressable h) {
-		if (h == null) {
-			return;
-		}
-
-		try {
-			if (!(boolean) closeHandle.invokeExact(h)) {
-				throw new Exception("GetLastError() returned " + getLastError());
-			}
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static final MethodHandle closeHandle = methodHandle("CloseHandle",
-			FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS));
-
-
-	/**
-	 * Opens an existing local process object.
-	 *
-	 * @param desiredAccess The access to the process object.
-	 * @param inheritHandle Processes created by this process should inherit the handle
-	 * @param processId The identifier of the local process to be opened.
-	 * @return the open handle to the specified process.
-	 */
-	public static Addressable openProcess(int desiredAccess, boolean inheritHandle, int processId) {
-		try {
-			Addressable hProcess = (MemoryAddress) openProcess.invokeExact(desiredAccess, inheritHandle, processId);
-			if (hProcess == null) {
-				throw new Exception("GetLastError() returned " + getLastError());
-			}
-			return hProcess;
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static final MethodHandle openProcess = methodHandle("OpenProcess",
-			FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_BOOLEAN, JAVA_INT));
-
-	private static final String queryFullProcessImageName(Addressable hProcess, int dwFlags) {
-		try {
-			SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
-			int size = WinBase.MAX_PATH; // Start with MAX_PATH, then increment with 1024 each iteration
-			// TODO: Handle case if process image length exceeds predefined buffer size
-			Addressable lpExeName = allocator.allocate(size);
-			Addressable lpdwSize = allocator.allocate(JAVA_INT, size);
-			if (!(boolean) queryFullProcessImageName.invokeExact(hProcess, dwFlags, lpExeName, lpdwSize)) {
-				throw new Exception("GetLastError() returned " + getLastError());
-			}
-			byte[] bytes = ((MemorySegment) lpExeName).toArray(ValueLayout.JAVA_BYTE);
-			return ParseUtil.parseByteArrayToUtf16(bytes);
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
+    /**
+     * Retrieves the path of the directory designated for temporary files.
+     *
+     * @return the temporary file path.
+     */
+    public static String getTempPath() {
+        try {
+            SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
+            // TODO: Handle case if Temp path length exceeds predefined buffer size
+            Addressable buffer = allocator.allocate(WinBase.MAX_PATH);
+            int nBufferLength = WinBase.MAX_PATH;
+            if ((int) getTempPath.invoke(nBufferLength, buffer) == 0) {
+                throw new Exception("GetLastError() returned " + getLastError());
+            }
+            byte[] bytes = ((MemorySegment) buffer).toArray(ValueLayout.JAVA_BYTE);
+            return ParseUtil.parseByteArrayToUtf16(bytes);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
-	private static final MethodHandle queryFullProcessImageName = methodHandle("QueryFullProcessImageNameW",
-            FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, JAVA_INT, ADDRESS, ADDRESS));
+    private static final MethodHandle getTempPath = methodHandle("GetTempPathW",
+        FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS));
 
-	/**
-	 * Retrieves the full name of the executable image for the specified process.
-	 *
-	 * @param pid The identifier of the local process to be opened.
-	 * @param dwFlags flags for path format of returned path.
-	 * @return the full name of the executable image for the specified process.
-	 */
-	public static final String queryFullProcessImageName(int pid, int dwFlags) {
-		Addressable hProcess = null;
-		RuntimeException re = null;
+    /**
+     * Closes an open object handle.
+     *
+     * @param h The handle to be closed
+     */
+    public static void closeHandle(Addressable h) {
+        if (h == null) {
+            return;
+        }
 
-		try {
-			hProcess = (Addressable) openProcess(WinBase.PROCESS_QUERY_INFORMATION | WinBase.PROCESS_VM_READ, false,
-					pid);
-			if (hProcess == null) {
-				throw new RuntimeException("GetLastError() returned " + getLastError());
-			}
-			return queryFullProcessImageName(hProcess, dwFlags);
-		} catch (RuntimeException e) {
-			re = e;
-			throw re; // re-throw to invoke finally block
-		} finally {
-			try {
-				closeHandle(hProcess);
-			} catch (RuntimeException e) {
-				if (re == null) {
-					re = e;
-				} else {
-					// Suppress Runtime Exception for closeHandle
-				}
-			}
-			if (re != null) {
-				throw re;
-			}
-		}
-	}
+        try {
+            if (!(boolean) closeHandle.invokeExact(h)) {
+                throw new Exception("GetLastError() returned " + getLastError());
+            }
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle closeHandle = methodHandle("CloseHandle",
+        FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS));
+
+
+    /**
+     * Opens an existing local process object.
+     *
+     * @param desiredAccess The access to the process object.
+     * @param inheritHandle Processes created by this process should inherit the handle
+     * @param processId     The identifier of the local process to be opened.
+     * @return the open handle to the specified process.
+     */
+    public static Addressable openProcess(int desiredAccess, boolean inheritHandle, int processId) {
+        try {
+            Addressable hProcess = (MemoryAddress) openProcess.invokeExact(desiredAccess, inheritHandle, processId);
+            if (hProcess == null) {
+                throw new Exception("GetLastError() returned " + getLastError());
+            }
+            return hProcess;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle openProcess = methodHandle("OpenProcess",
+        FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_BOOLEAN, JAVA_INT));
+
+    private static final String queryFullProcessImageName(Addressable hProcess, int dwFlags) {
+        try {
+            SegmentAllocator allocator = SegmentAllocator.implicitAllocator();
+            int size = WinBase.MAX_PATH; // Start with MAX_PATH, then increment with 1024 each iteration
+            // TODO: Handle case if process image length exceeds predefined buffer size
+            Addressable lpExeName = allocator.allocate(size);
+            Addressable lpdwSize = allocator.allocate(JAVA_INT, size);
+            if (!(boolean) queryFullProcessImageName.invokeExact(hProcess, dwFlags, lpExeName, lpdwSize)) {
+                throw new Exception("GetLastError() returned " + getLastError());
+            }
+            byte[] bytes = ((MemorySegment) lpExeName).toArray(ValueLayout.JAVA_BYTE);
+            return ParseUtil.parseByteArrayToUtf16(bytes);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle queryFullProcessImageName = methodHandle("QueryFullProcessImageNameW",
+        FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, JAVA_INT, ADDRESS, ADDRESS));
+
+    /**
+     * Retrieves the full name of the executable image for the specified process.
+     *
+     * @param pid     The identifier of the local process to be opened.
+     * @param dwFlags flags for path format of returned path.
+     * @return the full name of the executable image for the specified process.
+     */
+    public static final String queryFullProcessImageName(int pid, int dwFlags) {
+        Addressable hProcess = null;
+        RuntimeException re = null;
+
+        try {
+            hProcess = (Addressable) openProcess(WinBase.PROCESS_QUERY_INFORMATION | WinBase.PROCESS_VM_READ, false,
+                pid);
+            if (hProcess == null) {
+                throw new RuntimeException("GetLastError() returned " + getLastError());
+            }
+            return queryFullProcessImageName(hProcess, dwFlags);
+        } catch (RuntimeException e) {
+            re = e;
+            throw re; // re-throw to invoke finally block
+        } finally {
+            try {
+                closeHandle(hProcess);
+            } catch (RuntimeException e) {
+                if (re == null) {
+                    re = e;
+                } else {
+                    // Suppress Runtime Exception for closeHandle
+                }
+            }
+            if (re != null) {
+                throw re;
+            }
+        }
+    }
 }
