@@ -22,7 +22,7 @@ public class WtsApi32 {
 
     private static final MethodHandle WTSEnumerateProcessEx = methodHandle("WTSEnumerateProcessesA", FunctionDescriptor.of(JAVA_BOOLEAN, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS));
 
-    private static final MemoryLayout _WTS_PROCESS_INFOA = MemoryLayout.structLayout(
+    private static final GroupLayout _WTS_PROCESS_INFOA = MemoryLayout.structLayout(
         JAVA_INT.withName("SessionId"),
         JAVA_INT.withName("ProcessId"),
         JAVA_CHAR.withName("pProcessName"),
@@ -30,7 +30,7 @@ public class WtsApi32 {
     ).withName("WTS_PROCESS_INFOA");
 
     /**
-     * Refer to <a href="https://github.com/VFPX/Win32API/blob/master/libraries/wtsapi32/WTSEnumerateProcesses.md">Win32API</a>
+     * Refer to <a href="https://learn.microsoft.com/en-us/windows/win32/api/wtsapi32/nf-wtsapi32-wtsenumerateprocessesa">Win32API</a>
      */
     public static void enumerateProcesses() {
         try {
@@ -38,20 +38,25 @@ public class WtsApi32 {
                 int hServer = 0; // represents null handle
                 int version = 1; // version of enumerated request, must be 1
                 // out variables
-                Addressable ppProcessInfo = session.allocate(_WTS_PROCESS_INFOA); // array of WTS_PROCESS_INFO
+                var processArrayLayout = MemoryLayout.sequenceLayout(1024, _WTS_PROCESS_INFOA);
+                Addressable ppProcessInfo = session.allocate(processArrayLayout); // array of WTS_PROCESS_INFO
                 Addressable pCount = session.allocate(JAVA_INT); // process count
-                var ret = (boolean) WTSEnumerateProcessEx.invokeExact(hServer, 0, version, ppProcessInfo, pCount);
 
-                if (!ret) throw new Exception("error calling WTSEnumerateProcessesA");
+                if (!(boolean) WTSEnumerateProcessEx.invokeExact(hServer, 0, version, ppProcessInfo, pCount))
+                    throw new Exception("error calling WTSEnumerateProcessesA");
 
-                int processCount = ppProcessInfo.address().get(JAVA_INT, 0) - 1;
+                int processCount = pCount.address().get(JAVA_INT, 0);
                 System.out.println("Total processes found: " + processCount);
 
+//                var sequenceVH = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("ProcessId"));
+//                System.out.println(sequenceVH.get(ppProcessInfo, 0));
+                var vh = processArrayLayout.varHandle(PathElement.sequenceElement(2), PathElement.groupElement("ProcessId"));
+                System.out.println(vh.get(ppProcessInfo));
+//                System.out.println(ppProcessInfo.address().get(JAVA_INT,0));
+//                System.out.println(ppProcessInfo.address().get(JAVA_INT,32));
+//                System.out.println(ppProcessInfo.address().get(JAVA_CHAR,64));
 //                for (int i = 0; i < processCount; i++) {
-//
 //                }
-
-                System.out.println(pCount.address().get(JAVA_INT, 0));
             }
         } catch (Throwable ex) {
             ex.printStackTrace();
