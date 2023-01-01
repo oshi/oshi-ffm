@@ -20,12 +20,12 @@ public class WtsApi32 {
         return LINKER.downcallHandle(WTSAPI32.lookup(methodName).orElseThrow(), fd);
     }
 
-    private static final MethodHandle WTSEnumerateProcessEx = methodHandle("WTSEnumerateProcessesA", FunctionDescriptor.of(JAVA_BOOLEAN, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS));
+    private static final MethodHandle WTSEnumerateProcessEx = methodHandle("WTSEnumerateProcessesW", FunctionDescriptor.of(JAVA_BOOLEAN, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS));
 
     private static final GroupLayout _WTS_PROCESS_INFOA = MemoryLayout.structLayout(
         JAVA_INT.withName("SessionId"),
         JAVA_INT.withName("ProcessId"),
-        JAVA_CHAR.withName("pProcessName"),
+        ADDRESS.withName("pProcessName"),
         ADDRESS.withName("pUserSid")
     ).withName("WTS_PROCESS_INFOA");
 
@@ -50,13 +50,19 @@ public class WtsApi32 {
 
 //                var sequenceVH = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("ProcessId"));
 //                System.out.println(sequenceVH.get(ppProcessInfo, 0));
-                var vh = processArrayLayout.varHandle(PathElement.sequenceElement(2), PathElement.groupElement("ProcessId"));
-                System.out.println(vh.get(ppProcessInfo));
+                var sess_vh = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("SessionId"));
+                var pid_vh = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("ProcessId"));
+                var pname_vh = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("pProcessName"));
+                var sid_vh = processArrayLayout.varHandle(PathElement.sequenceElement(), PathElement.groupElement("pUserSid"));
 //                System.out.println(ppProcessInfo.address().get(JAVA_INT,0));
 //                System.out.println(ppProcessInfo.address().get(JAVA_INT,32));
 //                System.out.println(ppProcessInfo.address().get(JAVA_CHAR,64));
-//                for (int i = 0; i < processCount; i++) {
-//                }
+                for (int i = 0; i < processCount; i++) {
+                    System.out.println(sess_vh.get(ppProcessInfo, i));
+                    System.out.println(pid_vh.get(ppProcessInfo, i));
+                    System.out.println(pname_vh.get(ppProcessInfo, i));
+                    System.out.println(sid_vh.get(ppProcessInfo, i));
+                }
             }
         } catch (Throwable ex) {
             ex.printStackTrace();
