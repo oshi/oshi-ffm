@@ -21,7 +21,7 @@
         <maven-surefire-plugin.version>3.0.0-M8</maven-surefire-plugin.version>
         <!-- tools -->
         <sortpom-plugin.version>3.2.0</sortpom-plugin.version>
-        <spotless-plugin.version>2.30.0</spotless-plugin.version>
+        <spotless-plugin.version>2.31.0</spotless-plugin.version>
     </properties>
 
     <dependencies>
