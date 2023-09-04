@@ -13,7 +13,7 @@
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- Dependency versions -->
-        <slf4j.version>2.0.7</slf4j.version>
+        <slf4j.version>2.0.9</slf4j.version>
         <junit.version>5.10.0</junit.version>
         <hamcrest.version>2.2</hamcrest.version>
         <!-- Compile versions -->
