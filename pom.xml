@@ -17,7 +17,7 @@
         <junit.version>5.11.4</junit.version>
         <hamcrest.version>3.0</hamcrest.version>
         <!-- Compile versions -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <!-- tools -->
         <sortpom-plugin.version>4.0.0</sortpom-plugin.version>
