@@ -18,7 +18,7 @@
         <hamcrest.version>3.0</hamcrest.version>
         <!-- Compile versions -->
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <!-- tools -->
         <sortpom-plugin.version>4.0.0</sortpom-plugin.version>
         <spotless-plugin.version>2.44.3</spotless-plugin.version>
